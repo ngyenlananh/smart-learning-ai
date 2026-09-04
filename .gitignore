@@ -141,3 +141,18 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python (ai-service/)
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+*.ipynb_checkpoints
+
+# Environment
+.env
+.env.local
+
+# Docker
+*.log
