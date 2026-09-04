@@ -1,0 +1,1 @@
+// Exam document schema.

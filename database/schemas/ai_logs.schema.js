@@ -1,0 +1,1 @@
+// AI logs document schema.

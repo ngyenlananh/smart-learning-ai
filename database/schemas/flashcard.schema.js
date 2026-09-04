@@ -1,0 +1,1 @@
+// Flashcard document schema.
