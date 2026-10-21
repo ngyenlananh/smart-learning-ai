@@ -5,7 +5,7 @@ Cấu trúc dự án nền tảng học tập thông minh tích hợp AI.
 =======
 # smart-learning-ai
 Web Nền tảng Hỗ trợ Học tập &amp; Luyện thi thông minh tích hợp AI
->>>>>>> a160bda6699f6939aa9d938065e4e1b0133428bb
+
 # Smart Learning AI
 
 Nền tảng hỗ trợ học tập và luyện thi thông minh, tích hợp trợ lý AI, quản lý khóa học, flashcard, bài kiểm tra và theo dõi tiến độ học tập.
