@@ -1,5 +1,42 @@
 {
   "name": "smart-learning-ai-backend",
   "private": true,
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "bcrypt": "latest",
+    "cookie-parser": "^1.4.7",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "helmet": "latest",
+    "jsonwebtoken": "latest",
+    "jszip": "^3.10.2",
+    "mammoth": "^1.12.3",
+    "mongoose": "latest",
+    "morgan": "latest",
+    "multer": "^2.4.0",
+    "pdf-parse": "^2.4.5",
+    "xlsx": "^0.18.5",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "latest",
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/jsonwebtoken": "latest",
+    "@types/morgan": "latest",
+    "@types/multer": "^2.2.0",
+    "@types/node": "latest",
+    "prisma": "^6.19.0",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
 }

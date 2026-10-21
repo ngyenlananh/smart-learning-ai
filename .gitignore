@@ -1,10 +1,11 @@
-<<<<<<< HEAD
 node_modules/
+.uploads/
+uploads/
 .venv/
 __pycache__/
 .env
 *.pyc
-=======
+
 # Logs
 logs
 *.log
@@ -163,4 +164,4 @@ venv/
 
 # Docker
 *.log
->>>>>>> a160bda6699f6939aa9d938065e4e1b0133428bb
+backend/.env

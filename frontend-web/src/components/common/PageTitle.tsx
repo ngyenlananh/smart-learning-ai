@@ -1,0 +1,5 @@
+import { ReactNode } from "react";
+
+export function PageTitle({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
+  return <div className="page-title"><div>{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1>{description && <p className="subheading">{description}</p>}</div>{action}</div>;
+}
