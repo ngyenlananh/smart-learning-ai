@@ -1,14 +1,19 @@
-
-# Smart Learning AI
-
-Cấu trúc dự án nền tảng học tập thông minh tích hợp AI.
-=======
-# smart-learning-ai
-Web Nền tảng Hỗ trợ Học tập &amp; Luyện thi thông minh tích hợp AI
-
 # Smart Learning AI
 
 Nền tảng hỗ trợ học tập và luyện thi thông minh, tích hợp trợ lý AI, quản lý khóa học, flashcard, bài kiểm tra và theo dõi tiến độ học tập.
+
+## Mục lục
+
+- [Tính năng](#tính-năng)
+- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+- [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
+- [Cấu trúc dự án](#cấu-trúc-dự-án)
+- [Yêu cầu môi trường](#yêu-cầu-môi-trường)
+- [Cài đặt](#cài-đặt)
+- [Các lệnh thường dùng](#các-lệnh-thường-dùng)
+- [API chính](#api-chính)
+- [Lưu trữ dữ liệu](#lưu-trữ-dữ-liệu)
+- [Bảo mật](#bảo-mật)
 
 ## Tính năng
 
@@ -51,6 +56,23 @@ Nền tảng hỗ trợ học tập và luyện thi thông minh, tích hợp tr�
 - AI service viết bằng Python tại `ai-service/`.
 - Docker và Docker Compose.
 - Nginx và Kubernetes manifest trong `infra/`.
+
+## Kiến trúc hệ thống
+
+```text
+Người dùng
+   │
+   ▼
+Frontend React/Vite (:5173)
+   │ HTTP/JSON
+   ▼
+Backend Express/TypeScript (:4000)
+   ├── PostgreSQL qua Prisma
+   ├── MongoDB qua Mongoose
+   └── AI provider hoặc ai-service
+```
+
+Frontend gửi request đến backend. Backend chịu trách nhiệm xác thực, xử lý nghiệp vụ, truy cập cơ sở dữ liệu và cung cấp API cho khóa học, bài kiểm tra, flashcard, dashboard và trợ lý AI.
 
 ## Cấu trúc dự án
 
@@ -154,6 +176,17 @@ http://localhost:5173
 
 AI service nằm trong thư mục `ai-service/`. Cài dependencies theo file `requirements.txt`, sau đó cấu hình các biến môi trường cần thiết cho provider AI trước khi chạy service.
 
+## Lưu trữ dữ liệu
+
+Ứng dụng sử dụng hai cơ sở dữ liệu:
+
+| Cơ sở dữ liệu | Dữ liệu |
+|---|---|
+| PostgreSQL | Người dùng, phiên đăng nhập và cài đặt ứng dụng |
+| MongoDB | Khóa học, bài học, kết quả, flashcard, tài liệu và lịch sử trò chuyện AI |
+
+Schema và migration của PostgreSQL nằm trong [backend/prisma/](./backend/prisma/). File `backend/.env` chỉ được lưu cục bộ và không được commit lên Git.
+
 ## Các lệnh thường dùng
 
 ### Backend
@@ -184,6 +217,40 @@ npm run preview  # Xem bản build production
 | Trợ lý AI | `/ai` |
 | Cài đặt | `/settings` |
 | Dashboard | `/dashboard/summary` |
+
+## Kiểm tra hoạt động
+
+Sau khi khởi động backend, chạy:
+
+```bash
+curl http://localhost:4000/api/health
+```
+
+Kết quả mong đợi:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+## Xử lý lỗi thường gặp
+
+### Không kết nối được PostgreSQL hoặc MongoDB
+
+- Kiểm tra PostgreSQL và MongoDB đã được khởi động.
+- Kiểm tra `DATABASE_URL` và `MONGODB_URI` trong `backend/.env`.
+- Chạy lại migration bằng `npm run prisma:migrate` trong thư mục `backend`.
+
+### Frontend không gọi được backend
+
+- Đảm bảo backend đang chạy tại `http://localhost:4000`.
+- Kiểm tra `CLIENT_URL` trong `backend/.env` là `http://localhost:5173`.
+- Kiểm tra terminal backend để xem lỗi CORS hoặc lỗi route.
+
+### Thiếu biến môi trường
+
+So sánh `backend/.env` với [backend/.env.example](./backend/.env.example), sau đó bổ sung các biến còn thiếu. Không sử dụng secret mẫu trong môi trường production.
 
 ## Bảo mật
 
