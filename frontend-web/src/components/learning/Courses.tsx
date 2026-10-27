@@ -13,7 +13,6 @@ import {
   X,
   Plus,
   Inbox,
-  Sparkles,
 } from "lucide-react";
 
 const initialCourses = [

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bot, CalendarDays, Cloud, Link2, LockKeyhole, Palette, Plug, UserRound, Sparkles, Shield, type LucideIcon } from "lucide-react";
+import { Bot, CalendarDays, Cloud, Link2, LockKeyhole, Palette, Plug, UserRound, Shield, type LucideIcon } from "lucide-react";
 import { HeroBanner } from "../components/common/HeroBanner";
 import { getMe } from "../services/auth";
 import { apiFetch } from "../services/api";
@@ -57,37 +57,36 @@ export function SettingsPage() {
     <div className="settings-page">
       {/* HERO BANNER TRUYỀN CẢM HỨNG */}
       <HeroBanner
-        tag="⚙️ Cấu hình tài khoản & Cá nhân hóa"
-        title="Cài đặt hệ thống"
-        subtitle="Quản lý thông tin hồ sơ, tùy chỉnh phương thức phản hồi của AI và cấu hình bảo mật tài khoản."
+        tag={t("settings.heroTag")}
+        title={t("settings.title")}
+        subtitle={t("settings.description")}
         metrics={[
           {
             icon: UserRound,
-            label: "Tài khoản",
-            value: "Đã xác thực",
-            sub: "🛡️ Bảo mật an toàn",
+            label: t("settings.metrics.account"),
+            value: t("settings.metrics.verified"),
+            sub: t("settings.metrics.secure"),
             badgeClass: "target-badge",
           },
           {
             icon: Bot,
-            label: "Gia sư AI",
-            value: "Hoạt động",
-            sub: "Giọng Nữ miền Nam",
+            label: t("settings.metrics.tutor"),
+            value: t("settings.metrics.active"),
+            sub: t("settings.metrics.voice"),
             badgeClass: "star-badge",
           },
           {
             icon: Palette,
-            label: "Giao diện",
-            value: "Tiếng Việt",
-            sub: "Cỡ chữ chuẩn 16px",
+            label: t("settings.metrics.appearance"),
+            value: settings.appearance.language,
+            sub: t("settings.metrics.font"),
             badgeClass: "flame-badge",
           },
         ]}
         headerAction={{
-          sectionTitle: "Trung tâm cài đặt",
-          sectionSubtitle: "Chọn danh mục cấu hình bên dưới để chỉnh sửa",
-          buttonText: "Lưu thay đổi",
-          buttonIcon: Sparkles,
+          sectionTitle: t("settings.centerTitle"),
+          sectionSubtitle: t("settings.centerDescription"),
+          buttonText: t("settings.save"),
           onAction: () => void saveSettings(),
         }}
       />
@@ -147,8 +146,8 @@ function SettingsActions({ onCancel, onSave }: { onCancel: () => void; onSave: (
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <section className="settings-panel"><div className="settings-panel-heading"><div><h2>{title}</h2><p>{description}</p></div></div>{children}</section>; }
 function Group({ title, children }: { title: string; children: React.ReactNode }) { return <div className="settings-group"><h3>{title}</h3>{children}</div>; }
 function FormRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) { return <div className="form-row"><div><label>{label}</label>{hint && <small>{hint}</small>}</div><div className="form-control">{children}</div></div>; }
-function Select({ value, options, onChange }: { value: string; options: string[]; onChange: (value: string) => void }) { return <select value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option}>{option}</option>)}</select>; }
-function SegmentedControl({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) { return <FormRow label={label}><div className="segmented-control" role="group" aria-label={label}>{options.map((option) => <button key={option} type="button" aria-pressed={value === option} className={value === option ? "active" : ""} onClick={() => onChange(option)}>{option}</button>)}</div></FormRow>; }
+function Select({ value, options, onChange }: { value: string; options: string[]; onChange: (value: string) => void }) { return <select className="ui-select" value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option}>{option}</option>)}</select>; }
+function SegmentedControl({ label, value, options, optionLabels, onChange }: { label: string; value: string; options: string[]; optionLabels?: Record<string, string>; onChange: (value: string) => void }) { return <FormRow label={label}><div className="segmented-control" role="group" aria-label={label}>{options.map((option) => <button key={option} type="button" aria-pressed={value === option} className={value === option ? "active" : ""} onClick={() => onChange(option)}>{optionLabels?.[option] ?? option}</button>)}</div></FormRow>; }
 function Switch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className="switch-row"><span>{label}</span><button type="button" role="switch" aria-label={label} aria-checked={checked} className={checked ? "switch on" : "switch"} onClick={() => onChange(!checked)}><i /></button></div>; }
 function AccountPanel({ settings, errors, updateProfile, onSecurity }: { settings: Settings; errors: Record<string, string>; updateProfile: (field: keyof Settings["profile"], value: string) => void; onSecurity: () => void }) {
   const [email, setEmail] = useState("");
@@ -173,7 +172,7 @@ function AccountPanel({ settings, errors, updateProfile, onSecurity }: { setting
   return <><Panel title="Tài khoản & Hồ sơ" description="Quản lý thông tin dùng để cá nhân hóa trải nghiệm học tập."><Group title="Hồ sơ"><div className="profile-photo"><div className="photo-placeholder">MA</div><button type="button" aria-label="Đổi ảnh đại diện">⌑</button><div><strong>Ảnh đại diện</strong><small>JPG hoặc PNG, tối đa 5MB</small></div></div><FormRow label="Họ và tên"><input value={settings.profile.name} onChange={(event) => updateProfile("name", event.target.value)} />{errors.name && <small className="field-error">{errors.name}</small>}</FormRow><FormRow label="Ngày sinh"><input type="date" value={settings.profile.birthDate} onChange={(event) => updateProfile("birthDate", event.target.value)} /></FormRow><FormRow label="Số điện thoại" hint="Chỉ nhập chữ số, từ 9 đến 15 số"><input inputMode="numeric" value={settings.profile.phone} onChange={(event) => updateProfile("phone", event.target.value.replace(/\D/g, ""))} />{errors.phone && <small className="field-error">{errors.phone}</small>}</FormRow></Group><Group title="Đăng nhập"><FormRow label="Email" hint="Nhập email mới rồi nhấn Enter hoặc bấm ra ngoài để lưu"><div className="inline-control"><input type="email" value={email || "Đang tải..."} disabled={emailSaving} onChange={(event) => { setEmail(event.target.value); setNextEmail(event.target.value); setEmailError(""); }} onBlur={() => void saveEmail()} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} />{emailSaving && <small>Đang lưu...</small>}</div>{emailError && <small className="field-error">{emailError}</small>}</FormRow><FormRow label="Mật khẩu"><button className="outline-button" type="button" onClick={onSecurity}>Đổi mật khẩu</button></FormRow></Group><Group title="Học tập"><FormRow label="Trình độ học vấn"><Select value={settings.profile.education} options={["THPT", "Cao đẳng", "Đại học", "Thạc sĩ", "Tiến sĩ"]} onChange={(value) => updateProfile("education", value)} /></FormRow><FormRow label="Cấp độ học tập"><Select value={settings.profile.level} options={["Cơ bản", "Trung cấp", "Nâng cao"]} onChange={(value) => updateProfile("level", value)} /></FormRow></Group></Panel></>;
 }
 function AiTutorPanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const update = (key: keyof Settings["ai"], value: string | boolean) => updateSection("ai", { ...settings.ai, [key]: value }); return <Panel title="Cài đặt Gia sư AI" description="Điều chỉnh cách SmartEdu AI đồng hành cùng bạn."><Group title="Cách AI trò chuyện"><FormRow label="Giọng nói AI"><Select value={settings.ai.voice} options={["Nữ miền Nam", "Nam miền Bắc", "Nữ miền Bắc", "Nam miền Nam"]} onChange={(value) => update("voice", value)} /></FormRow><SegmentedControl label="Cách xưng hô" value={settings.ai.address} options={["Thầy/cô – em", "Mình – bạn", "Tôi – bạn"]} onChange={(value) => update("address", value)} /><SegmentedControl label="Giọng điệu" value={settings.ai.tone} options={["Thân thiện", "Nghiêm túc", "Khích lệ"]} onChange={(value) => update("tone", value)} /><SegmentedControl label="Mức độ giải thích" value={settings.ai.explanation} options={["Ngắn gọn", "Cân bằng", "Chuyên sâu"]} onChange={(value) => update("explanation", value)} /></Group><Group title="Tự động hóa"><Switch label="Gợi ý bài tập sau mỗi bài học" checked={settings.ai.suggestions} onChange={(value) => update("suggestions", value)} /><Switch label="Lưu lịch sử trò chuyện" checked={settings.ai.history} onChange={(value) => update("history", value)} /></Group></Panel>; }
-function AppearancePanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const { t } = useTranslation(); const update = (key: keyof Settings["appearance"], value: string) => updateSection("appearance", { ...settings.appearance, [key]: value }); return <Panel title={t("settings.appearanceTitle")} description={t("settings.appearanceDescription")}><Group title={t("settings.displayOptions")}><SegmentedControl label={t("settings.language")} value={settings.appearance.language} options={[t("settings.vietnamese"), t("settings.english")]} onChange={(value) => { const language = value === t("settings.english") ? "English" : "Tiếng Việt"; update("language", language); void i18n.changeLanguage(language === "English" ? "en" : "vi"); }} /><SegmentedControl label="Chủ đề" value={settings.appearance.theme} options={["Sáng", "Tối", "Theo hệ thống"]} onChange={(value) => update("theme", value)} /><SegmentedControl label="Cỡ chữ" value={settings.appearance.fontSize} options={["Nhỏ 14px", "Vừa 16px", "Lớn 18px"]} onChange={(value) => update("fontSize", value)} /></Group></Panel>; }
+function AppearancePanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const { t } = useTranslation(); const update = (key: keyof Settings["appearance"], value: string) => updateSection("appearance", { ...settings.appearance, [key]: value }); return <Panel title={t("settings.appearanceTitle")} description={t("settings.appearanceDescription")}><Group title={t("settings.displayOptions")}><SegmentedControl label={t("settings.language")} value={settings.appearance.language} options={["Tiếng Việt", "English"]} optionLabels={{ "Tiếng Việt": t("settings.vietnamese"), English: t("settings.english") }} onChange={(value) => { update("language", value); void i18n.changeLanguage(value === "English" ? "en" : "vi"); }} /><SegmentedControl label={t("settings.theme")} value={settings.appearance.theme} options={["Sáng", "Tối", "Theo hệ thống"]} optionLabels={{ "Sáng": t("settings.light"), "Tối": t("settings.dark"), "Theo hệ thống": t("settings.system") }} onChange={(value) => update("theme", value)} /><SegmentedControl label={t("settings.fontSize")} value={settings.appearance.fontSize} options={["Nhỏ 14px", "Vừa 16px", "Lớn 18px"]} optionLabels={{ "Nhỏ 14px": t("settings.fontSmall"), "Vừa 16px": t("settings.fontMedium"), "Lớn 18px": t("settings.fontLarge") }} onChange={(value) => update("fontSize", value)} /></Group></Panel>; }
 function SecurityPanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const [passwords, setPasswords] = useState({ current: "", next: "", confirm: "" }); const [error, setError] = useState(""); function validatePassword() { if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(passwords.next)) return setError("Mật khẩu mới phải có ít nhất 8 ký tự, gồm cả chữ và số."); if (passwords.next !== passwords.confirm) return setError("Mật khẩu nhập lại chưa khớp với mật khẩu mới."); setError("Mật khẩu hợp lệ."); } return <Panel title="Bảo mật" description="Bảo vệ tài khoản và kiểm soát các phiên đăng nhập của bạn."><Group title="Đổi mật khẩu"><FormRow label="Mật khẩu hiện tại"><input type="password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} /></FormRow><FormRow label="Mật khẩu mới" hint="Tối thiểu 8 ký tự, gồm chữ và số"><input type="password" value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} /></FormRow><FormRow label="Nhập lại mật khẩu mới"><input type="password" value={passwords.confirm} onChange={(event) => setPasswords({ ...passwords, confirm: event.target.value })} />{error && <small className={error === "Mật khẩu hợp lệ." ? "field-success" : "field-error"}>{error}</small>}</FormRow><button className="primary-button" type="button" onClick={validatePassword}>Cập nhật mật khẩu</button></Group><Group title="Xác thực hai yếu tố"><Switch label="Bật xác thực hai yếu tố (2FA)" checked={settings.security.twoFactor} onChange={(value) => updateSection("security", { twoFactor: value })} /></Group><Group title="Lịch sử đăng nhập"><div className="login-list"><LoginItem device="MacBook Pro" browser="Chrome · Hà Nội" time="Đang hoạt động" current /><LoginItem device="iPhone 15" browser="Safari · Hồ Chí Minh" time="2 giờ trước" /><LoginItem device="Windows PC" browser="Edge · Đà Nẵng" time="3 ngày trước" /></div></Group></Panel>; }
 function LoginItem({ device, browser, time, current }: { device: string; browser: string; time: string; current?: boolean }) { return <div className="login-item"><span className="device-icon">▣</span><div><strong>{device}</strong><small>{browser}</small></div><span className="login-time">{time}</span>{current ? <b>Thiết bị này</b> : <button className="text-button" type="button">Đăng xuất</button>}</div>; }
 function IntegrationsPanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) {

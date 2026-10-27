@@ -16,6 +16,16 @@ export type ExamAnalytics = {
 	subjects: Array<{ subject: string; averageScore: number; masteryPercent: number; attempts: number; level: "Thành thạo" | "Trung bình" | "Cần cải thiện" }>;
 	recommendation: string | null;
 };
+export class ExamGenerationError extends Error {
+	code: string;
+	status: number;
+	constructor(code: string, message: string, status = 503) {
+		super(message);
+		this.name = "ExamGenerationError";
+		this.code = code;
+		this.status = status;
+	}
+}
 
 const demoExams: (ExamSummary & { questions: Question[] })[] = [
 	createDemoExam("exam-thought", "Đề ôn tập Tư tưởng Hồ Chí Minh", "Tư tưởng Hồ Chí Minh", "Cơ sở hình thành tư tưởng", "Trung bình", 30, 35, "gold"),
@@ -132,7 +142,9 @@ export async function generateExam(userId: string, input: GenerateExamInput, fil
 	const subject = repairExamText(input.subject);
 	const topic = repairExamText(input.topic || input.subject);
 	const examId = isDatabaseReady() ? new mongoose.Types.ObjectId().toString() : `generated-${Date.now()}`;
-	const questions = file ? await generateQuestionsFromDocument(file, examId, subject, topic, questionCount, input.prompt) : buildQuestions(examId, subject, topic, questionCount);
+	const questions = file
+		? await generateQuestionsFromDocument(file, examId, subject, topic, questionCount, input.prompt)
+		: await generateQuestionsFromPrompt(examId, subject, topic, questionCount, difficulty, input.format, input.prompt);
 	const createdAt = new Date();
 	const summary: ExamSummary = { id: examId, title: `Đề do AI tạo - ${topic}`, meta: `${subject} · ${questionCount} câu · ${durationMinutes} phút`, subject, topic, difficulty, ai: true, userCreated: true, questionCount, durationMinutes, attempts: 0, createdAt: createdAt.toISOString() };
 	const exam = { ...summary, questions };
@@ -197,6 +209,45 @@ export async function deleteExam(userId: string, examId: string): Promise<boolea
 	return generatedExams.delete(examId);
 }
 
+export async function listSampleExams(): Promise<ExamSummary[]> {
+	const matches: ExamSummary[] = [];
+	if (isDatabaseReady()) {
+		const records = await mongoose.connection.collection("exams").find({
+			$or: [
+				{ "questions.text": { $regex: "nội dung nào sau đây là chính xác", $options: "i" } },
+				{ "questions.options": { $regex: "Khẳng định [A-D]", $options: "i" } },
+				{ "questions.options": { $regex: "Phương án [A-D]", $options: "i" } },
+			],
+		}).toArray();
+		matches.push(...records.map((record) => toSummary(record, String(record.createdBy ?? ""))));
+	}
+	matches.push(...[...generatedExams.values()].filter((exam) => exam.questions.some((question) => isSampleQuestion(question))).map(({ questions: _questions, ...summary }) => summary));
+	return matches;
+}
+
+export async function deleteSampleExams(confirmed: boolean): Promise<number> {
+	if (!confirmed) throw new ExamGenerationError("CONFIRMATION_REQUIRED", "Phải xác nhận trước khi xóa đề mẫu.", 400);
+	let deleted = 0;
+	if (isDatabaseReady()) {
+		const result = await mongoose.connection.collection("exams").deleteMany({
+			$or: [
+				{ "questions.text": { $regex: "nội dung nào sau đây là chính xác", $options: "i" } },
+				{ "questions.options": { $regex: "Khẳng định [A-D]", $options: "i" } },
+				{ "questions.options": { $regex: "Phương án [A-D]", $options: "i" } },
+			],
+		});
+		deleted += result.deletedCount;
+	}
+	for (const [examId, exam] of generatedExams) {
+		if (exam.questions.some((question) => isSampleQuestion(question))) {
+			generatedExams.delete(examId);
+			generatedOwners.delete(examId);
+			deleted += 1;
+		}
+	}
+	return deleted;
+}
+
 export async function setExamHidden(userId: string, examId: string, hidden: boolean): Promise<boolean> {
 	if (isDatabaseReady() && mongoose.isValidObjectId(examId) && mongoose.isValidObjectId(userId)) {
 		const record = await mongoose.connection.collection("exams").findOne({ _id: toObjectId(examId) });
@@ -213,22 +264,63 @@ export async function setExamHidden(userId: string, examId: string, hidden: bool
 async function generateQuestionsFromDocument(file: UploadedExamFile, examId: string, subject: string, topic: string, count: number, prompt?: string): Promise<Question[]> {
 	try {
 		const text = await extractExamText(file.path, file.originalname);
-		if (!text.trim()) throw new Error("Không đọc được nội dung tài liệu");
-		const ai = getAiConfig();
-		const systemPrompt = "Bạn là chuyên gia tạo đề trắc nghiệm. Chỉ trả JSON dạng {questions:[{text:string,options:[string,string,string,string],correctAnswer:number}]}. Tạo đúng số câu được yêu cầu, mỗi câu có 4 đáp án, correctAnswer từ 0 đến 3. Chỉ dùng kiến thức có trong tài liệu.";
-		const userPrompt = `Môn: ${subject}\nChủ đề: ${topic}\nSố câu: ${count}\nYêu cầu thêm: ${prompt ?? "Không có"}\nTài liệu:\n${text.slice(0, 150000)}`;
-		const { payload } = await requestExamModelConfigured({ ...ai, systemPrompt, userPrompt });
-		const content = ai.isNativeGemini ? payload.candidates?.[0]?.content?.parts?.[0]?.text : payload.choices?.[0]?.message?.content;
-		const parsed = JSON.parse(content ?? "{}") as { questions?: unknown[] };
-		const questions = Array.isArray(parsed.questions) ? parsed.questions.map((item, index) => {
-			const value = item as Record<string, unknown>;
-			return { id: `${examId}-q-${index + 1}`, text: String(value.text ?? "").trim(), options: Array.isArray(value.options) ? value.options.map(String).map((option) => option.trim()) : [], correctAnswer: Number(value.correctAnswer) };
-		}).filter((question) => question.text && question.options.length === 4 && question.options.every(Boolean) && Number.isInteger(question.correctAnswer) && question.correctAnswer >= 0 && question.correctAnswer <= 3).slice(0, count) : [];
-		if (!questions.length) throw new Error("AI không tạo được câu hỏi từ tài liệu");
-		return questions;
+		if (!text.trim()) throw new ExamGenerationError("EMPTY_DOCUMENT", "Tài liệu không có nội dung để tạo câu hỏi.", 400);
+		return await generateQuestionsWithAi(examId, subject, topic, count, `Tài liệu tham khảo:\n${text.slice(0, 40000)}\nYêu cầu thêm: ${prompt ?? "Không có"}`);
 	} finally {
 		await removeUploadedFile(file.path);
 	}
+}
+
+async function generateQuestionsFromPrompt(examId: string, subject: string, topic: string, count: number, difficulty: Difficulty, format: string, prompt?: string): Promise<Question[]> {
+	return generateQuestionsWithAi(
+		examId,
+		subject,
+		topic,
+		count,
+		`Độ khó: ${difficulty}\nHình thức: ${format}\nYêu cầu thêm: ${prompt ?? "Không có"}`,
+	);
+}
+
+async function generateQuestionsWithAi(examId: string, subject: string, topic: string, count: number, context: string): Promise<Question[]> {
+	const ai = getAiConfig();
+	const systemPrompt = "Bạn là chuyên gia tạo đề trắc nghiệm. Chỉ trả JSON dạng {questions:[{text:string,options:[string,string,string,string],correctAnswer:number}]}. Tạo câu hỏi thật, không dùng nội dung mẫu, không dùng các đáp án như Khẳng định A/B/C/D hoặc Phương án A/B/C/D. Mỗi câu có đúng 4 đáp án khác nhau và correctAnswer từ 0 đến 3.";
+	const userPrompt = `Môn: ${subject}\nChủ đề: ${topic}\nSố câu: ${count}\n${context}\nNếu chủ đề là danh sách từ hoặc tài liệu ngắn, hãy tạo câu hỏi chọn nghĩa đúng hoặc điền từ vào ngữ cảnh cụ thể.`;
+	const { payload } = await requestExamModelConfigured({ ...ai, systemPrompt, userPrompt });
+	const content = ai.isNativeGemini ? payload.candidates?.[0]?.content?.parts?.[0]?.text : payload.choices?.[0]?.message?.content;
+	let parsed: { questions?: unknown[] };
+	try {
+		parsed = JSON.parse(content ?? "{}") as { questions?: unknown[] };
+	} catch {
+		throw new ExamGenerationError("INVALID_AI_JSON", "AI trả về dữ liệu không đúng định dạng.", 502);
+	}
+	const questions = Array.isArray(parsed.questions) ? parsed.questions.map((item, index) => {
+		const value = item as Record<string, unknown>;
+		return {
+			id: `${examId}-q-${index + 1}`,
+			text: String(value.text ?? "").trim(),
+			options: Array.isArray(value.options) ? value.options.map(String).map((option) => option.trim()) : [],
+			correctAnswer: Number(value.correctAnswer),
+		};
+	}).filter(isValidQuestion).slice(0, count) : [];
+	if (questions.length < Math.ceil(count / 2)) {
+		throw new ExamGenerationError("INVALID_AI_QUESTIONS", `AI chỉ tạo được ${questions.length}/${count} câu hợp lệ, không đủ để lưu đề.`, 502);
+	}
+	return questions;
+}
+
+function isValidQuestion(question: Question): boolean {
+	const normalized = `${question.text} ${question.options.join(" ")}`.toLocaleLowerCase("vi-VN");
+	const samplePattern = /(khẳng định|phương án)\s*[a-d]\b|nội dung nào sau đây là chính xác/i;
+	return Boolean(
+		question.text &&
+		question.options.length === 4 &&
+		new Set(question.options.map((option) => option.toLocaleLowerCase("vi-VN"))).size === 4 &&
+		question.options.every(Boolean) &&
+		Number.isInteger(question.correctAnswer) &&
+		question.correctAnswer >= 0 &&
+		question.correctAnswer < 4 &&
+		!samplePattern.test(normalized),
+	);
 }
 
 async function extractExamText(filePath: string, fileName: string): Promise<string> {
@@ -252,11 +344,14 @@ async function removeUploadedFile(filePath: string): Promise<void> {
 }
 
 type ModelPayload = { choices?: Array<{ message?: { content?: string } }>; candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-const retryableProviderStatuses = new Set([429, 500, 503]);
+const retryableProviderStatuses = new Set([500, 503]);
 
 async function requestExamModelConfigured(options: { apiKey: string; baseUrl: string; model: string; fallbackModel: string; isNativeGemini: boolean; systemPrompt: string; userPrompt: string }): Promise<{ payload: ModelPayload; model: string }> {
+	let requestAttempts = 0;
 	for (const model of [options.model, options.fallbackModel]) {
-		for (let attempt = 0; attempt < 4; attempt += 1) {
+		for (let attempt = 0; attempt < 2; attempt += 1) {
+			if (requestAttempts >= 3) break;
+			requestAttempts += 1;
 			const url = options.isNativeGemini
 				? `${options.baseUrl}/models/${model}:generateContent?key=${encodeURIComponent(options.apiKey)}`
 				: `${options.baseUrl}/chat/completions`;
@@ -268,12 +363,12 @@ async function requestExamModelConfigured(options: { apiKey: string; baseUrl: st
 				response = await fetch(url, {
 					method: "POST",
 					headers: { "Content-Type": "application/json", ...(options.isNativeGemini ? {} : { Authorization: "Bearer " + options.apiKey }) },
-					signal: AbortSignal.timeout(120_000),
+					signal: AbortSignal.timeout(45_000),
 					body: JSON.stringify(body),
 				});
 			} catch (error) {
 				console.error(`[AI exams] provider request failed url=${redactAiUrl(url)} model=${model} attempt=${attempt + 1}`, error);
-				if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+				if (attempt < 1) await new Promise((resolve) => setTimeout(resolve, 750));
 				continue;
 			}
 			const responseBody = await response.text();
@@ -285,6 +380,9 @@ async function requestExamModelConfigured(options: { apiKey: string; baseUrl: st
 					throw new Error("AI trả về JSON không hợp lệ");
 				}
 			}
+			if (response.status === 429) {
+				throw new ExamGenerationError("AI_QUOTA_EXCEEDED", "AI đã hết hạn mức hoặc đang bị giới hạn truy cập. Vui lòng kiểm tra quota/billing của API key rồi thử lại.", 429);
+			}
 			if (!retryableProviderStatuses.has(response.status)) {
 				if ([400, 404].includes(response.status) && model !== options.fallbackModel) {
 					console.warn(`[AI exams] model ${model} rejected the request (HTTP ${response.status}); trying fallback model ${options.fallbackModel}`);
@@ -295,10 +393,10 @@ async function requestExamModelConfigured(options: { apiKey: string; baseUrl: st
 				}
 				throw new Error(`Nhà cung cấp AI từ chối yêu cầu (HTTP ${response.status})`);
 			}
-			if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+			if (attempt < 1) await new Promise((resolve) => setTimeout(resolve, 750));
 		}
 	}
-	throw new Error("AI đang quá tải, vui lòng thử lại sau ít phút");
+	throw new ExamGenerationError("AI_UNAVAILABLE", "AI đang quá tải hoặc hết hạn mức, vui lòng thử lại sau.", 503);
 }
 
 /* legacy request implementation removed; configured request above is the only provider path */
@@ -398,8 +496,7 @@ async function hydratePreferences(userId: string): Promise<void> {
 function toDetail(record: Record<string, unknown>, userId: string): ExamDetail {
 	const summary = toSummary(record, userId);
 	const storedQuestions = toQuestions(record.questions);
-	const questions = hasPlaceholderQuestions(storedQuestions) ? buildQuestions(summary.id, summary.subject, summary.topic, summary.questionCount) : storedQuestions;
-	return { ...summary, questions };
+	return { ...summary, questions: storedQuestions };
 }
 function toQuestions(value: unknown): Question[] { return Array.isArray(value) ? value.map((item) => { const question = item as Record<string, unknown>; return { id: String(question.id), text: String(question.text), options: Array.isArray(question.options) ? question.options.map(String) : [], correctAnswer: Number(question.correctAnswer ?? 0) }; }) : []; }
 function createDemoExam(id: string, title: string, subject: string, topic: string, difficulty: Difficulty, questionCount: number, durationMinutes: number, _tone: string, ai = false): ExamSummary & { questions: Question[] } { return { id, title, meta: `${subject} · ${questionCount} câu · ${durationMinutes} phút`, subject, topic, difficulty, ai, userCreated: false, questionCount, durationMinutes, attempts: 0, questions: buildQuestions(id, subject, topic, questionCount) }; }
@@ -427,6 +524,9 @@ function buildQuestions(examId: string, subject: string, topic: string, count: n
 	return Array.from({ length: count }, (_, index) => { const [text, options, correctAnswer] = bank[index % bank.length]; return { id: `${examId}-q-${index + 1}`, text, options, correctAnswer }; });
 }
 function hasPlaceholderQuestions(questions: Question[]): boolean { return questions.some((question) => question.text.includes("câu hỏi luyện tập số") || question.options.some((option) => option.startsWith("Phương án "))); }
+function isSampleQuestion(question: Question): boolean {
+	return /(khẳng định|phương án)\s*[a-d]\b|nội dung nào sau đây là chính xác/i.test(`${question.text} ${question.options.join(" ")}`);
+}
 function normalizeDifficulty(value: string): Difficulty { return value === "Dễ" || value === "Khó" ? value : "Trung bình"; }
 function repairExamText(value: string): string {
 	return value

@@ -64,7 +64,7 @@ export const languageOptions = decks.map((deck, index) => ({ index, label: deck.
 
 export const flashcards: Flashcard[] = decks.flatMap((deck) => deck.terms.map((value, index) => {
   const [term, ipa] = value.split("|");
-  const visuals = ["👋", "🙏", "🤲", "🙇", "👋", "✅", "❌", "👍", "😊", "🙁", "💧", "🍜", "🏠", "🏫", "📖", "🧑‍🤝‍🧑", "👨‍👩‍👧", "☀️", "🌙", "📅", "🔜", "⏪", "⏰", "📍", "🧑", "🏷️", "❤️", "😍", "✨", "🛒", "💡", "🧠", "🗣️", "👂", "📚", "✍️", "🎓", "💼", "🚶", "👋", "🛍️", "🏷️", "🍽️", "🥤", "😴", "⏰", "🤝", "🌸", "⭐"];
+  const visuals = ["👋", "🙏", "🤲", "🙇", "👋", "✅", "❌", "👍", "😊", "🙁", "💧", "🍜", "🏠", "🏫", "📖", "🧑‍🤝‍🧑", "👨‍👩‍👧", "☀️", "🌙", "📅", "🔜", "⏪", "⏰", "📍", "🧑", "🏷️", "❤️", "😍", "🛒", "💡", "🧠", "🗣️", "👂", "📚", "✍️", "🎓", "💼", "🚶", "👋", "🛍️", "🏷️", "🍽️", "🥤", "😴", "⏰", "🤝", "🌸", "⭐"];
   const pronunciation = deck.language === "ENGLISH" ? englishIpa[index] : ipa;
   const example = makeContext(deck.language, term, index);
   return { deck: "Hành trình ngôn ngữ thế giới", language: deck.language, code: deck.code, flag: deck.flag, flagUrl: `https://flagcdn.com/w40/${flagCodes[deck.language]}.png`, term, ipa: pronunciation, meaning: meanings[index], type: "Từ vựng", example, exampleMeaning: makeContextTranslation(deck.language, meanings[index], index), progress: index + 1, total: 50, visual: visuals[index] };

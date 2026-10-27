@@ -11,7 +11,6 @@ import {
   Layers,
   Languages,
   BookMarked,
-  Sparkles,
 } from "lucide-react";
 import { ProgressBar } from "./ProgressBar";
 

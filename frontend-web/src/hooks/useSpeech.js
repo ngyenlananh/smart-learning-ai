@@ -52,6 +52,8 @@ export function speak(text, lang = "vi-VN") {
   utterance.lang = lang;
   const voices = window.speechSynthesis.getVoices();
   utterance.voice = voices.find((voice) => voice.lang.toLowerCase().startsWith("vi")) ?? null;
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utterance);
 }

@@ -10,34 +10,30 @@ import {
   LogOut,
   Search,
   Bell,
-  Sparkles,
   Bot,
   ArrowRight,
 } from "lucide-react";
 import { View } from "../../App";
 import { getMe, logout } from "../../services/auth";
 import { useTranslation } from "react-i18next";
+import { getInitials } from "../../utils/display";
 
 type StoredSettings = { profile?: { name?: string } };
 
-function initials(name: string) {
-  return name.trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "É";
-}
-
-function getGreeting(name: string) {
+function getGreeting(name: string, t: (key: string, options?: Record<string, unknown>) => string) {
   const hour = new Date().getHours();
-  if (hour < 12) return `Chào buổi sáng, ${name} 👋`;
-  if (hour < 18) return `Chào buổi chiều, ${name} 👋`;
-  return `Chào buổi tối, ${name} 👋`;
+  if (hour < 12) return t("header.greetingMorning", { name });
+  if (hour < 18) return t("header.greetingAfternoon", { name });
+  return t("header.greetingEvening", { name });
 }
 
-const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  { id: "courses", label: "Khóa học của tôi", icon: BookOpen },
-  { id: "exams", label: "Luyện tập & Thi", icon: GraduationCap },
-  { id: "flashcards", label: "Thẻ Flashcard", icon: Layers },
-  { id: "analytics", label: "Hiệu suất", icon: BarChart3 },
-  { id: "ai", label: "Gia sư AI", icon: MessageSquare },
+const navItems: { id: View; labelKey: string; icon: typeof LayoutDashboard }[] = [
+  { id: "dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { id: "courses", labelKey: "nav.courses", icon: BookOpen },
+  { id: "exams", labelKey: "nav.exams", icon: GraduationCap },
+  { id: "flashcards", labelKey: "nav.flashcards", icon: Layers },
+  { id: "analytics", labelKey: "nav.analytics", icon: BarChart3 },
+  { id: "ai", labelKey: "nav.ai", icon: MessageSquare },
 ];
 
 export function AppShell({
@@ -171,7 +167,7 @@ export function AppShell({
                 <span className="nav-icon">
                   <IconComponent size={22} />
                 </span>
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </button>
             );
           })}
@@ -183,13 +179,13 @@ export function AppShell({
             <span className="tip-bot-icon">
               <Bot size={18} />
             </span>
-            <span className="tip-badge">Trợ lý AI</span>
+            <span className="tip-badge">{t("sidebar.aiAssistant")}</span>
           </div>
           <p className="tip-text">
-            Bạn cần giải thích bài học hay làm đề ôn luyện riêng?
+            {t("sidebar.aiTip")}
           </p>
           <button type="button" className="tip-action-btn">
-            <span>Hỏi Gia sư AI</span>
+            <span>{t("sidebar.askTutor")}</span>
             <ArrowRight size={14} />
           </button>
         </div>
@@ -203,13 +199,13 @@ export function AppShell({
             <span className="nav-icon">
               <Settings size={22} />
             </span>
-            <span>Cài đặt hệ thống</span>
+            <span>{t("nav.settings")}</span>
           </button>
 
           <div className="sidebar-divider dark-divider" />
 
           <div className="sidebar-account dark-account">
-            <span className="sidebar-account-avatar gradient-avatar">{initials(displayName)}</span>
+            <span className="sidebar-account-avatar gradient-avatar">{getInitials(displayName)}</span>
             <div className="account-text-wrap">
               <strong>{displayName}</strong>
               <small title={email}>{email}</small>
@@ -218,14 +214,14 @@ export function AppShell({
 
           <button
             className="nav-item dark-nav-item sidebar-logout"
-            aria-label="Đăng xuất"
-            title="Đăng xuất khỏi hệ thống"
+            aria-label={t("nav.logout")}
+            title={t("header.logoutTitle")}
             onClick={openLogout}
           >
             <span className="nav-icon">
               <LogOut size={22} aria-hidden="true" />
             </span>
-            <span>Đăng xuất</span>
+            <span>{t("nav.logout")}</span>
           </button>
         </div>
       </aside>
@@ -242,22 +238,22 @@ export function AppShell({
               onKeyDown={(event) => {
                 if (event.key === "Enter") onNavigate("courses");
               }}
-              placeholder="Tìm kiếm khóa học, đề thi, chủ đề..."
+              placeholder={t("header.search")}
             />
-            <kbd className="search-shortcut-kbd">Ctrl K</kbd>
+            <kbd className="search-shortcut-kbd">{t("header.shortcut")}</kbd>
           </div>
 
           <div className="top-actions">
             {/* Lời chào buổi tối / buổi sáng thân thiện */}
             <div className="topbar-user-greeting">
-              <span>{getGreeting(displayName)}</span>
+              <span>{getGreeting(displayName, t)}</span>
             </div>
 
             {/* Chuông thông báo có chấm đỏ nhấp nháy nhẹ */}
             <button
               className="icon-button notification-btn btn-float"
-              aria-label="Thông báo hệ thống"
-              title="Thông báo mới"
+              aria-label={t("header.notifications")}
+              title={t("header.newNotifications")}
               onClick={() => alert("Bạn có 2 bài tập cần hoàn thành trước Chủ nhật!")}
             >
               <Bell size={19} />
@@ -270,7 +266,7 @@ export function AppShell({
               aria-label={`Tài khoản ${displayName}`}
               onClick={() => onNavigate("settings")}
             >
-              {initials(displayName)}
+              {getInitials(displayName)}
             </button>
           </div>
         </header>

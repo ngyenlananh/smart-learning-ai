@@ -5,7 +5,7 @@ import remarkMath from "remark-math";
 import { HeroBanner } from "../common/HeroBanner";
 import { speak, stopSpeaking, useSpeechRecognition } from "../../hooks/useSpeech";
 import { useTranslation } from "react-i18next";
-import { Bot, MessageSquare, Sparkles, Plus, Mic, Send, Volume2, Square, BookOpen } from "lucide-react";
+import { Bot, MessageSquare, Plus, Mic, Send, Volume2, Square, BookOpen } from "lucide-react";
 
 type ChatMessage = { from: "ai" | "user"; text: string };
 type Conversation = { id: string; title: string; updatedAt: string };
@@ -38,36 +38,36 @@ export function AITutor({ messages, input, setInput, sendMessage, isLoading, con
 		<div className="ai-tutor-page-wrapper">
 			{/* HERO BANNER TRUYỀN CẢM HỨNG */}
 			<HeroBanner
-				tag="🤖 Trợ lý học tập thông minh 24/7"
-				title="Gia sư AI"
-				subtitle="Người bạn đồng hành giải đáp thắc mắc, phân tích sâu các khái niệm phức tạp và gợi ý bài tập rèn luyện tức thì."
+				tag={t("ai.heroTag")}
+				title={t("ai.title")}
+				subtitle={t("ai.description")}
 				metrics={[
 					{
 						icon: MessageSquare,
-						label: "Hội thoại",
-						value: `${conversations.length} cuộc`,
-						sub: "Lịch sử lưu trữ",
+						label: t("ai.conversations"),
+						value: `${conversations.length} ${t("ai.conversationUnit")}`,
+						sub: t("ai.historyStored"),
 						badgeClass: "target-badge",
 					},
 					{
-						icon: Sparkles,
-						label: "Độ chính xác",
+						icon: Bot,
+						label: t("ai.accuracy"),
 						value: "99.2%",
-						sub: "Mô hình giáo dục tối ưu",
+						sub: t("ai.optimizedModel"),
 						badgeClass: "star-badge",
 					},
 					{
 						icon: Bot,
-						label: "Trạng thái",
-						value: "Trực tuyến",
-						sub: "🟢 Sẵn sàng hỗ trợ",
+						label: t("ai.status"),
+						value: t("ai.online"),
+						sub: t("ai.ready"),
 						badgeClass: "flame-badge",
 					},
 				]}
 				headerAction={{
-					sectionTitle: "Không gian trò chuyện cùng Gia sư AI",
-					sectionSubtitle: "Hỏi bất cứ điều gì về bài học để nhận giải thích chi tiết",
-					buttonText: "Cuộc trò chuyện mới",
+					sectionTitle: t("ai.workspaceTitle"),
+					sectionSubtitle: t("ai.workspaceDescription"),
+					buttonText: t("ai.newConversation"),
 					buttonIcon: Plus,
 					onAction: onNewConversation,
 				}}
@@ -82,10 +82,10 @@ export function AITutor({ messages, input, setInput, sendMessage, isLoading, con
 						disabled={isLoading}
 					>
 						<Plus size={16} strokeWidth={2.5} />
-						<span>Cuộc trò chuyện mới</span>
+						<span>{t("ai.newConversation")}</span>
 					</button>
 
-					<div className="conversation-heading">Lịch sử trò chuyện</div>
+					<div className="conversation-heading">{t("ai.history")}</div>
 
 					{conversationLoading && <p className="conversation-loading">{t("ai.loading")}</p>}
 					{conversationError && <p className="conversation-error" role="alert">{conversationError}</p>}
@@ -102,7 +102,7 @@ export function AITutor({ messages, input, setInput, sendMessage, isLoading, con
 									disabled={isLoading}
 								>
 									<MessageSquare size={16} className="conv-icon" />
-									<strong>{conversation.title || "Cuộc trò chuyện mới"}</strong>
+									<strong>{conversation.title || t("ai.newConversation")}</strong>
 								</button>
 							))
 						) : (
@@ -117,14 +117,14 @@ export function AITutor({ messages, input, setInput, sendMessage, isLoading, con
 							<Bot size={22} />
 						</span>
 						<div className="chat-context-info">
-							<strong>Gia sư AI</strong>
+							<strong>{t("ai.tutor")}</strong>
 							<span className="online-status">
-								<i /> Đang trực tuyến
+								<i /> {t("ai.online")}
 							</span>
 						</div>
 						<button type="button" className="outline-button btn-float change-lesson-btn">
 							<BookOpen size={15} />
-							<span>Đổi bài học</span>
+							<span>{t("ai.changeLesson")}</span>
 						</button>
 					</div>
 
@@ -196,7 +196,6 @@ export function AITutor({ messages, input, setInput, sendMessage, isLoading, con
 							onClick={() => setInput("Giải thích công thức đổi cơ số")}
 							disabled={isLoading}
 						>
-							<Sparkles size={14} />
 							<span>Giải thích công thức đổi cơ số</span>
 						</button>
 						<button
@@ -205,7 +204,6 @@ export function AITutor({ messages, input, setInput, sendMessage, isLoading, con
 							onClick={() => setInput("Cho mình một bài tập tương tự")}
 							disabled={isLoading}
 						>
-							<Sparkles size={14} />
 							<span>Cho mình một bài tập tương tự</span>
 						</button>
 					</div>

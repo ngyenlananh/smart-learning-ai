@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import path from "node:path";
-import { deleteExam, generateExam, getExam, getExamAnalytics, getExamStats, listExams, renameExam, setExamHidden, submitExam } from "./exams.service.js";
+import { deleteExam, deleteSampleExams, ExamGenerationError, generateExam, getExam, getExamAnalytics, getExamStats, listExams, listSampleExams, renameExam, setExamHidden, submitExam } from "./exams.service.js";
 
 export const examsRouter = Router();
 const defaultUserId = "000000000000000000000001";
@@ -36,7 +36,29 @@ examsRouter.post("/generate", upload.single("document"), async (request, respons
 	} catch (error) {
 		console.error("Failed to generate exam", error);
 		const message = error instanceof Error ? error.message : "Không thể tạo đề thi";
-		response.status(400).json({ error: message });
+		const status = error instanceof ExamGenerationError ? error.status : 400;
+		response.status(status).json({ error: message, code: error instanceof ExamGenerationError ? error.code : "EXAM_GENERATION_FAILED" });
+	}
+});
+
+examsRouter.get("/admin/sample-exams", async (_request, response) => {
+	try {
+		response.json({ data: await listSampleExams() });
+	} catch (error) {
+		console.error("Failed to list sample exams", error);
+		response.status(500).json({ error: "Không thể liệt kê đề mẫu" });
+	}
+});
+
+examsRouter.delete("/admin/sample-exams", async (request, response) => {
+	try {
+		const confirmed = request.query.confirm === "true";
+		const deleted = await deleteSampleExams(confirmed);
+		response.json({ deleted });
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Không thể xóa đề mẫu";
+		const status = error instanceof ExamGenerationError ? error.status : 500;
+		response.status(status).json({ error: message, code: error instanceof ExamGenerationError ? error.code : "SAMPLE_CLEANUP_FAILED" });
 	}
 });
 

@@ -3,7 +3,7 @@ import { PageTitle } from "../common/PageTitle";
 import { HeroBanner } from "../common/HeroBanner";
 import { timeAgo } from "../../utils/timeAgo";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Flame, Star, Sparkles, GraduationCap, Search, CheckCircle2 } from "lucide-react";
+import { BookOpen, Flame, Star, GraduationCap, Search, CheckCircle2 } from "lucide-react";
 
 type Difficulty = "Dễ" | "Trung bình" | "Khó";
 type Exam = {
@@ -37,6 +37,7 @@ type ExamQuestion = {
 type ExamDetail = Exam & { questions: ExamQuestion[] };
 const API = "http://localhost:4000";
 const USER_ID = "000000000000000000000001";
+const EXAM_GENERATION_TIMEOUT_MS = 90_000;
 
 export function Exams() {
   const { t } = useTranslation();
@@ -187,7 +188,6 @@ export function Exams() {
           sectionTitle: "Ngân hàng đề thi",
           sectionSubtitle: `${stats.practicedExams} đề đã hoàn thành · Điểm TB ${stats.averageScore || "--"}`,
           buttonText: "Luyện tập ngay",
-          buttonIcon: Sparkles,
           onAction: () => setShowGenerator(true),
         }}
       />
@@ -246,7 +246,7 @@ export function Exams() {
           />
         </div>
         <select
-          className="subject-select-modern"
+          className="subject-select-modern ui-select"
           value={subject}
           onChange={(event) => setSubject(event.target.value)}
           aria-label="Lọc theo môn học"
@@ -275,7 +275,7 @@ export function Exams() {
       {/* Danh sách đề thi dạng card bo tròn hiện đại */}
       <section className="exam-cards-list-modern">
         {exams.map((exam) => (
-          <div className="modern-exam-card card-float" key={exam.id}>
+          <div className={`modern-exam-card card-float ${openExamMenuId === exam.id ? "menu-open" : ""}`} key={exam.id}>
             <span className={`modern-exam-icon ${exam.ai ? "blue" : subjectTone(exam.subject)}`}>
               {exam.ai ? "AI" : "ƒx"}
             </span>
@@ -349,15 +349,15 @@ export function Exams() {
                         setOpenExamMenuId(null);
                       }}
                     >
-                      Đổi tên đề
+                      Chỉnh sửa
                     </button>
                     <div className="exam-menu-separator" />
                     <button
                       className="exam-menu-item danger"
                       role="menuitem"
-                      onClick={() => void (exam.hidden && !exam.userCreated ? restoreExam(exam) : removeExam(exam))}
+                      onClick={() => void removeExam(exam)}
                     >
-                      {exam.userCreated ? "Xóa đề" : exam.hidden ? "Hiện đề" : "Ẩn đề"}
+                      Xóa đề
                     </button>
                   </div>
                 )}
@@ -661,11 +661,13 @@ function ExamGenerator({
   const [fileName, setFileName] = useState("");
   const [uploadedDocument, setUploadedDocument] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
   const [subjectQuery, setSubjectQuery] = useState(subject);
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [highlightedSubject, setHighlightedSubject] = useState(0);
   const subjectRef = useRef<HTMLLabelElement>(null);
+  const generationControllerRef = useRef<AbortController | null>(null);
   const subjects = [
     "Tư tưởng Hồ Chí Minh",
     "Lịch sử Đảng Cộng sản Việt Nam",
@@ -696,13 +698,37 @@ function ExamGenerator({
   useEffect(() => {
     setHighlightedSubject(0);
   }, [subjectQuery]);
+  useEffect(() => {
+    if (!loading) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [loading]);
   function chooseSubject(value: string) {
     setSubject(value);
     setSubjectQuery(value);
     setSubjectOpen(false);
   }
   const summary = `${subject} · ${level} · ${questionCount} câu · ${minutes} phút`;
+  function cancelGeneration() {
+    generationControllerRef.current?.abort();
+    generationControllerRef.current = null;
+    setLoading(false);
+    setError("Đã hủy tạo đề. Bạn có thể thử lại với ít câu hỏi hơn hoặc bỏ tài liệu đính kèm.");
+  }
   async function createExam() {
+    const controller = new AbortController();
+    generationControllerRef.current = controller;
+    let timedOut = false;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, EXAM_GENERATION_TIMEOUT_MS);
     setLoading(true);
     setError("");
     try {
@@ -719,24 +745,38 @@ function ExamGenerator({
         method: "POST",
         headers: { "X-User-Id": USER_ID },
         body,
+        signal: controller.signal,
       });
-      const payload = await response.json().catch(() => null) as { error?: string; data?: Exam } | null;
+      const payload = await response.json().catch(() => null) as { error?: string; code?: string; data?: Exam } | null;
       console.log("[ExamGenerator] create exam response", {
         status: response.status,
         ok: response.ok,
         payload,
       });
       if (!response.ok) {
-        if (response.status === 429 || response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504) {
-          throw new Error("AI đang quá tải, vui lòng thử lại sau ít phút.");
+        if (response.status === 429 || payload?.code === "AI_QUOTA_EXCEEDED") {
+          throw new Error(payload?.error || "AI đã hết hạn mức. Hãy kiểm tra quota/billing của API key rồi thử lại.");
+        }
+        if (response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504) {
+          throw new Error(payload?.error || "AI đang quá tải hoặc chưa sẵn sàng, vui lòng thử lại sau.");
         }
         throw new Error(payload?.error || "Không thể tạo đề thi.");
       }
       if (!payload?.data) throw new Error("Backend không trả về đề thi vừa tạo.");
       onCreated(payload.data);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Không thể tạo đề lúc này. Hãy kiểm tra backend hoặc thử lại.");
+      if (timedOut) {
+        setError("AI chưa phản hồi sau 90 giây. Hãy thử lại với ít câu hỏi hơn hoặc bỏ tài liệu đính kèm.");
+      } else if (cause instanceof DOMException && cause.name === "AbortError") {
+        return;
+      } else {
+        setError(cause instanceof Error ? cause.message : "Không thể tạo đề lúc này. Hãy kiểm tra backend hoặc thử lại.");
+      }
     } finally {
+      window.clearTimeout(timeoutId);
+      if (generationControllerRef.current === controller) {
+        generationControllerRef.current = null;
+      }
       setLoading(false);
     }
   }
@@ -753,7 +793,7 @@ function ExamGenerator({
             <span className="section-kicker">TRỢ LÝ TẠO ĐỀ</span>
             <h2>{loading ? "Đang tạo đề thi" : "Tạo đề thi bằng AI"}</h2>
           </div>
-          <button className="modal-close" onClick={onClose} disabled={loading} aria-label="Đóng">
+          <button className="modal-close" onClick={loading ? cancelGeneration : onClose} aria-label={loading ? "Hủy tạo đề" : "Đóng"}>
             ×
           </button>
         </div>
@@ -769,7 +809,12 @@ function ExamGenerator({
             <div className="loading-progress">
               <i />
             </div>
-            <small>Đang chuẩn bị nội dung học tập</small>
+            <small>
+              Đã chờ {elapsedSeconds} giây · Nếu quá 90 giây, yêu cầu sẽ tự dừng.
+            </small>
+            <button type="button" className="outline-button generator-cancel-button" onClick={cancelGeneration}>
+              Hủy tạo đề
+            </button>
           </div>
         ) : (
           <>

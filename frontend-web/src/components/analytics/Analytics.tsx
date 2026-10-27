@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { HeroBanner } from "../common/HeroBanner";
 import { useTranslation } from "react-i18next";
-import { Star, Award, Flame, Calendar, Sparkles, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Star, Award, Flame, Calendar, TrendingUp, CheckCircle2 } from "lucide-react";
 
 type AnalyticsData = {
 	weeks: Array<{ label: string; averageScore: number | null; attempts: number }>;
@@ -116,9 +116,14 @@ export function Analytics() {
 
 						<div className="large-bars modern-chart-bars">
 							{data.weeks.map((week, index) => (
-								<div className="large-bar-wrap" key={week.label}>
+								<div
+									className="large-bar-wrap"
+									key={week.label}
+									title={`${week.label}: ${week.averageScore === null ? "Chưa có dữ liệu" : `${week.averageScore.toFixed(1)} / 10`}`}
+									aria-label={`${week.label}: ${week.averageScore === null ? "Chưa có dữ liệu" : `${week.averageScore.toFixed(1)} trên 10`}`}
+								>
 									<strong className="large-bar-score">
-										{week.averageScore === null ? "–" : week.averageScore.toFixed(1)}
+										{week.averageScore === null ? "Chưa có" : week.averageScore.toFixed(1)}
 									</strong>
 									{week.averageScore !== null && (
 										<div
@@ -169,9 +174,6 @@ export function Analytics() {
 					{/* GỢI Ý LỘ TRÌNH TỪ AI */}
 					{data.recommendation && (
 						<div className="recommendation modern-recommendation">
-							<span className="rec-icon">
-								<Sparkles size={24} />
-							</span>
 							<div className="rec-content">
 								<strong>Lộ trình AI đề xuất tuần này</strong>
 								<p>{data.recommendation}</p>
@@ -194,4 +196,3 @@ function levelBadgeClass(level: AnalyticsData["subjects"][number]["level"]): str
 function levelFillClass(level: AnalyticsData["subjects"][number]["level"]): string {
 	return level === "Thành thạo" ? "fill-green" : level === "Trung bình" ? "fill-amber" : "fill-rose";
 }
-

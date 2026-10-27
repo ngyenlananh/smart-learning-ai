@@ -543,7 +543,7 @@ export function AuthPage({
           {/* Panel hiển thị khi đang ở màn hình Đăng nhập (nằm bên trái) */}
           <div className="overlay-slide-face face-login-mode">
             <div className="overlay-text-box">
-              <h2 className="overlay-heading">Hello, Welcome</h2>
+              <h2 className="overlay-heading">Xin chào, mừng bạn trở lại</h2>
               <p className="overlay-desc">Don't have an Account</p>
               <button
                 type="button"

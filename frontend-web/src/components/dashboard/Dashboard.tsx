@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Clock,
   ChevronRight,
-  Sparkles,
 } from "lucide-react";
 import { View } from "../../App";
 import { HeroBanner } from "../common/HeroBanner";
@@ -40,8 +39,8 @@ function getDateText(language: string, date = new Date()): string {
   });
   const normalizedLocalizedText = localizedText.replace(/^[\p{L}]/u, (letter) => letter.toUpperCase());
   const manualText = language === "en"
-    ? `${date.toLocaleDateString("en-US", { weekday: "long" })}, ${String(date.getDate()).padStart(2, "0")} ${date.toLocaleDateString("en-US", { month: "long" })}`
-    : `${vietnameseWeekdays[date.getDay()]}, ${String(date.getDate()).padStart(2, "0")} tháng ${String(date.getMonth() + 1).padStart(2, "0")}`;
+    ? `${date.toLocaleDateString("en-US", { weekday: "long" })}, ${date.toLocaleDateString("en-US", { month: "long" })} ${date.getDate()}`
+    : `${vietnameseWeekdays[date.getDay()]}, ${date.getDate()} tháng ${date.getMonth() + 1}`;
   return language === "vi" && normalizedLocalizedText === manualText ? normalizedLocalizedText : manualText;
 }
 
@@ -102,40 +101,39 @@ export function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) 
         title={t("dashboard.greeting", { name: displayName })}
         subtitle={t("dashboard.description")}
         actionCard={{
-          kicker: "TIẾP TỤC HỌC GẦN NHẤT",
-          title: nextCourse?.nextLesson ?? "Chương 3: Tư tưởng độc lập dân tộc",
-          subtitle: nextCourse?.title ?? "Tư tưởng Hồ Chí Minh",
-          buttonText: "Học tiếp",
+          kicker: t("dashboard.nextLesson"),
+          title: nextCourse?.nextLesson ?? t("dashboard.defaultLesson"),
+          subtitle: nextCourse?.title ?? t("dashboard.defaultCourse"),
+          buttonText: t("dashboard.continueLearning"),
           onClick: () => onNavigate("courses"),
         }}
         metrics={[
           {
             icon: Flame,
-            label: "Chuỗi học tập",
+            label: t("dashboard.streak"),
             value: "12 ngày liên tiếp",
-            sub: "🔥 Đang giữ phong độ tốt",
+            sub: t("dashboard.streakSub"),
             badgeClass: "flame-badge",
           },
           {
             icon: BookOpen,
-            label: "Khóa học đang học",
+            label: t("dashboard.courses"),
             value: `${courses.length} học phần`,
-            sub: `${activeCourses.length} môn đang tiến hành`,
+            sub: t("dashboard.inProgress", { count: activeCourses.length }),
             badgeClass: "target-badge",
           },
           {
             icon: Award,
-            label: "Điểm trung bình",
+            label: t("dashboard.average"),
             value: "8.4 / 10",
-            sub: "⭐ Xếp loại Giỏi",
+            sub: t("dashboard.gradeGood"),
             badgeClass: "star-badge",
           },
         ]}
         headerAction={{
-          sectionTitle: "Tổng quan học tập",
-          sectionSubtitle: "Theo dõi tiến trình các học phần và rèn luyện kỹ năng hàng ngày",
-          buttonText: "Luyện tập ngay",
-          buttonIcon: Sparkles,
+          sectionTitle: t("dashboard.learningOverview"),
+          sectionSubtitle: t("dashboard.overviewDescription"),
+          buttonText: t("dashboard.practice"),
           onAction: () => onNavigate("exams"),
         }}
       />
@@ -158,12 +156,12 @@ export function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) 
           <div className="stat-card-footer">
             <span className="positive">{t("dashboard.thisWeek")}</span>
             {/* 7 Chấm theo dõi chuỗi ngày trong tuần */}
-            <div className="streak-dots" title="Lịch học tập trong tuần">
+            <div className="streak-dots" title={t("dashboard.weekLearning")}>
               {daysOfWeek.map((day, idx) => (
                 <span
                   key={day}
                   className={`streak-dot ${idx <= currentDayIndex ? "active" : ""}`}
-                  title={`${day}: ${idx <= currentDayIndex ? "Đã học" : "Chưa học"}`}
+                  title={`${day}: ${idx <= currentDayIndex ? t("dashboard.studied") : t("dashboard.notStudied")}`}
                 >
                   {day}
                 </span>
@@ -188,7 +186,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) 
           <div className="stat-card-footer">
             <span className="muted">{t("dashboard.inProgress", { count: activeCourses.length })}</span>
             <span className="stat-tag-badge">
-              {completedCourses.length} hoàn thành
+              {completedCourses.length} {t("dashboard.completed")}
             </span>
           </div>
         </div>
@@ -208,7 +206,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) 
           </div>
           <div className="stat-card-footer">
             <span className="positive">{t("dashboard.sinceLastMonth")}</span>
-            <span className="stat-grade-badge">Học lực Giỏi</span>
+            <span className="stat-grade-badge">{t("dashboard.gradeGood")}</span>
           </div>
         </div>
       </section>
@@ -300,7 +298,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) 
                   onClick={() => onNavigate("courses")}
                   role="button"
                   tabIndex={0}
-                  title={`Xem chi tiết học phần ${course.title}`}
+                  title={t("dashboard.viewCourse", { title: course.title })}
                 >
                   <div className="course-card-left">
                     <span className={`course-status-icon ${isFinished ? "finished" : isLearning ? "active" : ""}`}>
