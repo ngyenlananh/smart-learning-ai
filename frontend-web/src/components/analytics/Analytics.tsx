@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { PageTitle } from "../common/PageTitle";
+import { HeroBanner } from "../common/HeroBanner";
 import { useTranslation } from "react-i18next";
+import { Star, Award, Flame, Calendar, Sparkles, TrendingUp, CheckCircle2 } from "lucide-react";
 
 type AnalyticsData = {
 	weeks: Array<{ label: string; averageScore: number | null; attempts: number }>;
@@ -47,19 +48,150 @@ export function Analytics() {
 	}, []);
 
 	const hasData = Boolean(data?.weeks.some((week) => week.attempts > 0) || data?.subjects.length);
-	return <>
-		<PageTitle title={t("analytics.title")} description={t("analytics.description")} action={<button className="outline-button analytics-period-button" type="button">{t("analytics.period")} <span aria-hidden="true">⌄</span></button>} />
-		{loading && <p className="loading-note">{t("analytics.loading")}</p>}
-		{!loading && usingSample && <p className="analytics-sample-note">{t("analytics.sample")}</p>}
-		{!loading && !hasData && <p className="empty-note analytics-empty">{t("analytics.empty")}</p>}
-		{!loading && hasData && data && <>
-			<section className="panel chart-panel"><div className="section-heading"><div><span className="section-kicker">{t("analytics.results")}</span><h2>{t("analytics.scoreWeeks")}</h2></div><div className="legend"><span className="legend-dot" />{t("analytics.score")}</div></div><div className="large-bars">{data.weeks.map((week, index) => <div className="large-bar-wrap" key={week.label}><strong className="large-bar-score">{week.averageScore === null ? "–" : week.averageScore.toFixed(1)}</strong>{week.averageScore !== null && <div className={index === data.weeks.length - 1 ? "large-bar current" : "large-bar"} style={{ height: `${Math.max(week.averageScore * 10, 4)}%` }} />}{week.averageScore === null && <div className="large-bar empty" /> }<span>{week.label}</span></div>)}</div></section>
-			<section className="panel mastery"><div className="section-heading"><div><span className="section-kicker">PHÂN TÍCH CHI TIẾT</span><h2>Mức độ thành thạo theo học phần</h2></div></div>{data.subjects.map((item) => <div className="mastery-row" key={item.subject}><div><span>{item.subject}</span><b className={`mastery-level ${levelClass(item.level)}`}>{item.level}</b></div><small className="mastery-meta">{item.attempts} bài · Điểm TB {item.averageScore.toFixed(1)}/10</small><div className="progress-track"><i className={levelClass(item.level)} style={{ width: `${item.masteryPercent}%` }} /></div></div>)}</section>
-			{data.recommendation && <div className="recommendation"><span>◎</span><div><strong>Lộ trình AI đề xuất tuần này</strong><p>{data.recommendation}</p></div><button className="text-button" type="button">Xem lộ trình →</button></div>}
-		</>}
-	</>;
+
+	const avgScore = data?.weeks
+		.filter((w) => w.averageScore !== null)
+		.map((w) => w.averageScore as number);
+	const latestAvg = avgScore && avgScore.length ? (avgScore[avgScore.length - 1]).toFixed(1) : "8.3";
+	const masteredCount = data?.subjects.filter((s) => s.level === "Thành thạo").length ?? 3;
+	const totalSubjects = data?.subjects.length ?? 5;
+
+	return (
+		<div className="analytics-page-wrapper">
+			{/* HERO BANNER TRUYỀN CẢM HỨNG */}
+			<HeroBanner
+				tag="📊 Phân tích hiệu suất & Năng lực học tập"
+				title="Hiệu suất"
+				subtitle="Theo dõi chi tiết tiến bộ học tập, mức độ thành thạo từng học phần và nhận gợi ý lộ trình thông minh từ AI."
+				metrics={[
+					{
+						icon: Star,
+						label: "Điểm TB gần nhất",
+						value: `${latestAvg} / 10`,
+						sub: "⭐ Phong độ học tập tốt",
+						badgeClass: "star-badge",
+					},
+					{
+						icon: Award,
+						label: "Mức độ thành thạo",
+						value: `${masteredCount} / ${totalSubjects} môn`,
+						sub: "🎯 Đang tăng đều đặn",
+						badgeClass: "target-badge",
+					},
+					{
+						icon: Flame,
+						label: "Chuỗi rèn luyện",
+						value: "12 ngày",
+						sub: "🔥 Duy trì liên tục",
+						badgeClass: "flame-badge",
+					},
+				]}
+				headerAction={{
+					sectionTitle: "Báo cáo hiệu suất học tập",
+					sectionSubtitle: "Điểm số 8 tuần gần đây và mức độ thành thạo chi tiết",
+					buttonText: "8 tuần gần đây ⌄",
+					buttonIcon: Calendar,
+					onAction: () => {},
+				}}
+			/>
+
+			{loading && <p className="loading-note">{t("analytics.loading")}</p>}
+			{!loading && usingSample && <p className="analytics-sample-note">{t("analytics.sample")}</p>}
+			{!loading && !hasData && <p className="empty-note analytics-empty">{t("analytics.empty")}</p>}
+
+			{!loading && hasData && data && (
+				<>
+					{/* BIỂU ĐỒ CỘT CAO >= 320PX */}
+					<section className="panel chart-panel modern-panel">
+						<div className="section-heading">
+							<div>
+								<span className="section-kicker">KẾT QUẢ LUYỆN TẬP</span>
+								<h2>Điểm số 8 tuần gần đây</h2>
+							</div>
+							<div className="legend">
+								<span className="legend-dot" />
+								<span>Điểm số / 10</span>
+							</div>
+						</div>
+
+						<div className="large-bars modern-chart-bars">
+							{data.weeks.map((week, index) => (
+								<div className="large-bar-wrap" key={week.label}>
+									<strong className="large-bar-score">
+										{week.averageScore === null ? "–" : week.averageScore.toFixed(1)}
+									</strong>
+									{week.averageScore !== null && (
+										<div
+											className={index === data.weeks.length - 1 ? "large-bar current" : "large-bar"}
+											style={{ height: `${Math.max(week.averageScore * 10, 6)}%` }}
+										/>
+									)}
+									{week.averageScore === null && <div className="large-bar empty" />}
+									<span className="large-bar-label">{week.label}</span>
+								</div>
+							))}
+						</div>
+					</section>
+
+					{/* PHÂN TÍCH MỨC ĐỘ THÀNH THẠO THEO HỌC PHẦN */}
+					<section className="panel mastery modern-panel">
+						<div className="section-heading">
+							<div>
+								<span className="section-kicker">PHÂN TÍCH CHI TIẾT</span>
+								<h2>Mức độ thành thạo theo học phần</h2>
+							</div>
+						</div>
+
+						<div className="mastery-list-modern">
+							{data.subjects.map((item) => (
+								<div className="mastery-row modern-mastery-row" key={item.subject}>
+									<div className="mastery-row-header">
+										<span className="mastery-course-name">{item.subject}</span>
+										<span className={`mastery-pill-badge ${levelBadgeClass(item.level)}`}>
+											{item.level === "Thành thạo" && <CheckCircle2 size={13} strokeWidth={2.5} />}
+											<span>{item.level}</span>
+										</span>
+									</div>
+									<small className="mastery-meta">
+										{item.attempts} bài thi · Điểm TB <strong>{item.averageScore.toFixed(1)}/10</strong>
+									</small>
+									<div className="mastery-progress-track">
+										<div
+											className={`mastery-progress-fill ${levelFillClass(item.level)}`}
+											style={{ width: `${item.masteryPercent}%` }}
+										/>
+									</div>
+								</div>
+							))}
+						</div>
+					</section>
+
+					{/* GỢI Ý LỘ TRÌNH TỪ AI */}
+					{data.recommendation && (
+						<div className="recommendation modern-recommendation">
+							<span className="rec-icon">
+								<Sparkles size={24} />
+							</span>
+							<div className="rec-content">
+								<strong>Lộ trình AI đề xuất tuần này</strong>
+								<p>{data.recommendation}</p>
+							</div>
+							<button className="enroll-new-course-btn btn-float rec-btn" type="button">
+								<span>Xem lộ trình →</span>
+							</button>
+						</div>
+					)}
+				</>
+			)}
+		</div>
+	);
 }
 
-function levelClass(level: AnalyticsData["subjects"][number]["level"]): string {
-	return level === "Thành thạo" ? "green-fill" : level === "Trung bình" ? "yellow-fill" : "red-fill";
+function levelBadgeClass(level: AnalyticsData["subjects"][number]["level"]): string {
+	return level === "Thành thạo" ? "pill-mastered" : level === "Trung bình" ? "pill-average" : "pill-needs-work";
 }
+
+function levelFillClass(level: AnalyticsData["subjects"][number]["level"]): string {
+	return level === "Thành thạo" ? "fill-green" : level === "Trung bình" ? "fill-amber" : "fill-rose";
+}
+

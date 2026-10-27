@@ -1,6 +1,8 @@
 import { ChangeEvent, DragEvent, ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Flashcard, flashcards, languageGroups, languageOptions } from "./flashcardData";
+import { HeroBanner } from "../common/HeroBanner";
+import { BookOpen, Star, Flame, Plus, Sparkles } from "lucide-react";
 
 export { flashcards } from "./flashcardData";
 
@@ -99,7 +101,65 @@ export function FlashcardLayout({ decks, activeDeckId, onSelectDeck, onCreateDec
   };
   const closeImport = () => { if (status === "loading") { if (!window.confirm("Tác vụ đang xử lý. Bạn có chắc muốn đóng?")) return; } setImportOpen(false); setStatus("idle"); setError(""); };
   const importModal = importOpen && <div className="flash-detail-backdrop" onClick={closeImport}><section className="flash-detail-panel import-panel" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={closeImport} aria-label="Đóng">×</button><span className="flash-kicker">TẢI TÀI LIỆU · TẠO THẺ</span><h2>{status === "preview" ? "Xem trước thẻ" : "Tải tài liệu lên"}</h2>{status === "preview" ? <><p>{file?.name} · {cards.length} thẻ hợp lệ</p><div className="import-preview-list">{cards.map((card, index) => <label key={index} className="import-preview-item"><input type="checkbox" checked={card.selected !== false} onChange={() => setCards((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, selected: item.selected === false } : item))} />  <span><input className="import-inline-edit" value={String(card.front ?? card.question ?? "")} onChange={(event) => setCards((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...(item.front !== undefined ? { front: event.target.value } : { question: event.target.value }) } : item))} /><input className="import-inline-edit" value={String(card.back ?? card.explanation ?? "")} onChange={(event) => setCards((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...(item.back !== undefined ? { back: event.target.value } : { explanation: event.target.value }) } : item))} /><small>{String(card.source ?? file?.name ?? "")}</small></span><button type="button" onClick={() => setCards((current) => current.filter((_item, itemIndex) => itemIndex !== index))}>Xóa</button></label>)}</div><div className="detail-panel-actions"><button className="outline-button" onClick={closeImport}>Đóng</button><button className="primary-button" disabled={!cards.some((card) => card.selected !== false)} onClick={() => void saveImport()}>Lưu vào bộ</button></div></> : <><label className={dragging ? "import-dropzone dragging" : "import-dropzone"} onDragOver={(event: DragEvent<HTMLLabelElement>) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); chooseFile(event.dataTransfer.files[0] ?? null); }}><input type="file" accept=".xlsx,.pdf,.docx,.pptx,.txt,.md" onChange={(event: ChangeEvent<HTMLInputElement>) => chooseFile(event.target.files?.[0] ?? null)} /><strong>{file ? file.name : "Kéo thả file Excel vào đây hoặc bấm để chọn file"}</strong><small>XLSX hoặc PDF, DOCX, PPTX, TXT, MD · tối đa 10MB</small></label><div className="import-options"><label>Loại thẻ<select value={cardType} onChange={(event) => setCardType(event.target.value)}><option value="auto">Theo bộ thẻ</option><option value="quiz">Trắc nghiệm</option><option value="flip">Lật mặt</option><option value="both">Cả hai</option></select></label><label>Số lượng<select value={count} onChange={(event) => setCount(event.target.value)}><option value="auto">Tự động</option><option value="10">10</option><option value="20">20</option><option value="30">30</option></select></label><label>Mức độ<select value={level} onChange={(event) => setLevel(event.target.value)}><option value="basic">Cơ bản</option><option value="medium">Trung bình</option><option value="advanced">Nâng cao</option></select></label>  </div>{error && <div className="import-error"><p className="save-error">{error}</p><button type="button" className="outline-button" onClick={() => void createPreview()} disabled={!file || status === "loading"}>Thử lại</button></div>}<div className="detail-panel-actions"><button className="outline-button" onClick={closeImport}>Đóng</button><button className="primary-button" disabled={!file || status === "loading"} onClick={() => void createPreview()}>{status === "loading" ? "Đang đọc file..." : "Tạo thẻ"}</button></div></>}</section></div>;
-  return <div className="flash-layout"><DeckSidebar decks={decks} activeDeckId={activeDeckId} onSelectDeck={onSelectDeck} onCreateDeck={onCreateDeck} /><section className="flash-study">{showReviewBanner && <div className="review-due-banner flash-review-banner"><span className="review-due-icon">♧</span><div className="review-due-copy"><strong>{reviewDueCount} từ đang chờ bạn ôn tập hôm nay</strong><span>Ôn ngay để duy trì chuỗi 5 ngày liên tục</span></div><button className="review-due-cta" onClick={onReview} disabled={!onReview}>Ôn tập ngay</button></div>}{children}</section><button className="flash-import-trigger" type="button" onClick={() => setImportOpen(true)}>Tải tài liệu lên</button>{importModal}</div>;
+  const totalLearnedCount = decks.reduce((acc, d) => acc + (d.learned || 0), 0);
+  return (
+    <div className="flashcards-page-wrapper">
+      <HeroBanner
+        tag="📚 Không gian ghi nhớ thông minh Flashcard"
+        title="Thẻ Flashcard"
+        subtitle="Ghi nhớ từ vựng và kiến thức cốt lõi theo phương pháp lặp lại ngắt quãng (Spaced Repetition) thông minh."
+        metrics={[
+          {
+            icon: BookOpen,
+            label: "Bộ thẻ hiện có",
+            value: `${decks.length} bộ`,
+            sub: "Sẵn sàng ôn luyện",
+            badgeClass: "target-badge",
+          },
+          {
+            icon: Star,
+            label: "Từ vựng đã thuộc",
+            value: `${totalLearnedCount} từ`,
+            sub: "🔥 Đang tiến bộ nhanh",
+            badgeClass: "star-badge",
+          },
+          {
+            icon: Flame,
+            label: "Chuỗi học liên tục",
+            value: "5 ngày",
+            sub: "Duy trì mỗi ngày",
+            badgeClass: "flame-badge",
+          },
+        ]}
+        headerAction={{
+          sectionTitle: "Không gian rèn luyện Flashcard",
+          sectionSubtitle: "Chọn bộ thẻ bên trái để bắt đầu luyện tập hoặc tải thêm tài liệu",
+          buttonText: "Tải tài liệu lên",
+          buttonIcon: Plus,
+          onAction: () => setImportOpen(true),
+        }}
+      />
+      <div className="flash-layout">
+        <DeckSidebar decks={decks} activeDeckId={activeDeckId} onSelectDeck={onSelectDeck} onCreateDeck={onCreateDeck} />
+        <section className="flash-study">
+          {showReviewBanner && (
+            <div className="review-due-banner flash-review-banner">
+              <span className="review-due-icon">♧</span>
+              <div className="review-due-copy">
+                <strong>{reviewDueCount} từ đang chờ bạn ôn tập hôm nay</strong>
+                <span>Ôn ngay để duy trì chuỗi 5 ngày liên tục</span>
+              </div>
+              <button className="enroll-new-course-btn btn-float" onClick={onReview} disabled={!onReview}>
+                Ôn tập ngay
+              </button>
+            </div>
+          )}
+          {children}
+        </section>
+      </div>
+      {importModal}
+    </div>
+  );
 }
 
 export function Flashcards({ card, activeIndex, reviewDueCount, flipped, setFlipped, reviewCard, previousCard, selectLanguage, reviewMode, reviewPosition, reviewTotal, startReviewSession, onReviewRating, nextReviewCard, previousReviewCard, onCreateCard, onDeleteCard, decks, activeDeckId, deckTitle, deckKind, deckProgress, onSelectDeck, onCreateDeck, onImportSaved }: {

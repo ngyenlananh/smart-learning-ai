@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { PageTitle } from "../common/PageTitle";
+import { HeroBanner } from "../common/HeroBanner";
 import { timeAgo } from "../../utils/timeAgo";
 import { useTranslation } from "react-i18next";
+import { BookOpen, Flame, Star, Sparkles, GraduationCap, Search, CheckCircle2 } from "lucide-react";
 
 type Difficulty = "Dễ" | "Trung bình" | "Khó";
 type Exam = {
@@ -153,53 +155,89 @@ export function Exams() {
     );
   return (
     <>
-      <PageTitle
-        title={t("nav.exams")}
-        description={`${stats.practicedExams} đề đã luyện · Điểm TB ${stats.averageScore || "--"}`}
-        action={
-          <button
-            className="primary-button terracotta"
-            onClick={() => setShowGenerator(true)}
-          >
-            {t("dashboard.practice")}
-          </button>
-        }
+      {/* HERO BANNER TRUYỀN CẢM HỨNG CHO TRANG LUYỆN TẬP & THI */}
+      <HeroBanner
+        tag="🎯 Trung tâm Luyện tập & Thi"
+        title="Luyện tập & Thi"
+        subtitle="Rèn luyện kỹ năng và nâng cao kiến thức với ngân hàng đề thi chuẩn hóa, tích hợp chấm điểm tức thì và giải thích chi tiết bởi AI."
+        metrics={[
+          {
+            icon: BookOpen,
+            label: "Đề đã luyện",
+            value: stats.practicedExams,
+            sub: "Theo dữ liệu của bạn",
+            badgeClass: "target-badge",
+          },
+          {
+            icon: Star,
+            label: "Điểm trung bình",
+            value: stats.averageScore ? `${stats.averageScore} / 10` : "-- / 10",
+            sub: "Từ các lần nộp bài",
+            badgeClass: "star-badge",
+          },
+          {
+            icon: Flame,
+            label: "Chuỗi luyện tập",
+            value: `${stats.streakDays} ngày`,
+            sub: "Tiếp tục duy trì",
+            badgeClass: "flame-badge",
+          },
+        ]}
+        headerAction={{
+          sectionTitle: "Ngân hàng đề thi",
+          sectionSubtitle: `${stats.practicedExams} đề đã hoàn thành · Điểm TB ${stats.averageScore || "--"}`,
+          buttonText: "Luyện tập ngay",
+          buttonIcon: Sparkles,
+          onAction: () => setShowGenerator(true),
+        }}
       />
-      <section className="exam-stats">
-        <div className="exam-stat">
-          <span className="exam-stat-icon blue-icon">▤</span>
-          <div>
+
+      {/* 3 Thẻ thống kê độc lập kích thước lớn (số 32px+) */}
+      <section className="exam-stats-modern">
+        <div className="exam-stat-card-modern">
+          <span className="exam-stat-icon-modern icon-blue">
+            <BookOpen size={24} />
+          </span>
+          <div className="exam-stat-info">
             <small>Đề đã luyện</small>
-            <strong>{stats.practicedExams}</strong>
-            <span className="positive">Theo dữ liệu của bạn</span>
+            <strong className="stat-number-lg">{stats.practicedExams}</strong>
+            <span className="stat-note-positive">Theo dữ liệu của bạn</span>
           </div>
         </div>
-        <div className="exam-stat">
-          <span className="exam-stat-icon gold-icon">★</span>
-          <div>
+
+        <div className="exam-stat-card-modern">
+          <span className="exam-stat-icon-modern icon-gold">
+            <Star size={24} />
+          </span>
+          <div className="exam-stat-info">
             <small>Điểm trung bình</small>
-            <strong>
+            <strong className="stat-number-lg">
               {stats.averageScore || "--"}
               <em>/10</em>
             </strong>
-            <span className="muted">Từ các lần nộp bài</span>
+            <span className="stat-note-muted">Từ các lần nộp bài</span>
           </div>
         </div>
-        <div className="exam-stat">
-          <span className="exam-stat-icon terracotta-icon">↗</span>
-          <div>
+
+        <div className="exam-stat-card-modern">
+          <span className="exam-stat-icon-modern icon-cyan">
+            <Flame size={24} />
+          </span>
+          <div className="exam-stat-info">
             <small>Chuỗi luyện tập</small>
-            <strong>
+            <strong className="stat-number-lg">
               {stats.streakDays}
               <em> ngày</em>
             </strong>
-            <span className="muted">Tiếp tục duy trì</span>
+            <span className="stat-note-muted">Tiếp tục duy trì</span>
           </div>
         </div>
       </section>
-      <section className="exam-toolbar">
-        <div className="exam-toolbar-search">
-          <span>⌕</span>
+
+      {/* Toolbar tìm kiếm & lọc đề thi (cao 44-48px) */}
+      <section className="exam-toolbar-modern">
+        <div className="exam-search-box-modern">
+          <Search size={18} className="search-icon-muted" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -208,7 +246,7 @@ export function Exams() {
           />
         </div>
         <select
-          className="subject-select"
+          className="subject-select-modern"
           value={subject}
           onChange={(event) => setSubject(event.target.value)}
           aria-label="Lọc theo môn học"
@@ -221,100 +259,109 @@ export function Exams() {
           <option>Tiếng Anh TOEIC</option>
         </select>
         <button
-          className={`outline-button hidden-exams-toggle ${showHidden ? "active" : ""}`}
+          className={`filter-pill hidden-exams-toggle pill-float ${showHidden ? "selected" : ""}`}
           onClick={() => setShowHidden((current) => !current)}
         >
-          {showHidden ? "Ẩn đề đã ẩn" : "Hiện đề đã ẩn"}
+          <span>{showHidden ? "Ẩn đề đã ẩn" : "Hiện đề đã ẩn"}</span>
         </button>
       </section>
+
       {error && <div className="error-note">{error}</div>}
       {notice && <div className="success-note">{notice}</div>}
-      <div className="exam-result-count">{exams.length} đề thi phù hợp</div>
-      <section className="exam-list">
+      <div className="exam-result-count-modern">
+        Tìm thấy <strong>{exams.length}</strong> đề thi phù hợp
+      </div>
+
+      {/* Danh sách đề thi dạng card bo tròn hiện đại */}
+      <section className="exam-cards-list-modern">
         {exams.map((exam) => (
-          <div className="exam-item" key={exam.id}>
-            <span
-              className={`exam-icon ${exam.ai ? "blue" : subjectTone(exam.subject)}`}
-            >
+          <div className="modern-exam-card card-float" key={exam.id}>
+            <span className={`modern-exam-icon ${exam.ai ? "blue" : subjectTone(exam.subject)}`}>
               {exam.ai ? "AI" : "ƒx"}
             </span>
-            <div className="exam-info">
-              <h2>{exam.title}</h2>
-              <p>
-                {exam.meta.replace(/\s*·\s*vừa tạo\s*$/, "")} ·{" "}
-                {exam.createdAt ? timeAgo(exam.createdAt) : "đã tạo"}
+
+            <div className="modern-exam-info">
+              <h3 className="modern-exam-title">{exam.title}</h3>
+              <p className="modern-exam-meta">
+                {exam.meta.replace(/\s*·\s*vừa tạo\s*$/, "")} · {exam.createdAt ? timeAgo(exam.createdAt) : "đã tạo"}
               </p>
-              <div className="exam-status">
+              <div className="modern-exam-status">
                 {exam.attempts ? (
                   <>
-                    <span className="status-check">✓</span>Đã làm{" "}
-                    {exam.attempts} lần · <b>Điểm gần nhất {exam.latestScore ?? exam.bestScore}/10</b>
+                    <span className="status-check-modern">
+                      <CheckCircle2 size={13} strokeWidth={2.5} />
+                    </span>
+                    <span>Đã làm {exam.attempts} lần · <b>Điểm gần nhất {exam.latestScore ?? exam.bestScore}/10</b></span>
                   </>
                 ) : (
                   <>
-                    <span className="status-dot" />
-                    Chưa làm
+                    <span className="status-dot-modern" />
+                    <span>Chưa làm</span>
                   </>
                 )}
               </div>
             </div>
-            <span
-              className={`difficulty ${exam.ai ? "blue" : subjectTone(exam.subject)}`}
-            >
-              {exam.difficulty}
-            </span>
-            <button
-              className="course-button compact"
-              onClick={() => setActiveExamId(exam.id)}
-            >
-              Làm bài
-            </button>
-            <div
-              className="exam-actions"
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setOpenExamMenuId(null);
-                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                  event.preventDefault();
-                  const items = event.currentTarget.querySelectorAll<HTMLButtonElement>(".exam-menu-item");
-                  const next = event.key === "ArrowDown" ? 0 : items.length - 1;
-                  items[next]?.focus();
-                }
-              }}
-            >
+
+            <div className="modern-exam-right">
+              <span className={`modern-difficulty-badge ${exam.ai ? "blue" : subjectTone(exam.subject)}`}>
+                {exam.difficulty}
+              </span>
+
               <button
-                className="exam-menu-toggle"
-                aria-label={`Tùy chọn ${exam.title}`}
-                aria-expanded={openExamMenuId === exam.id}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setOpenExamMenuId(openExamMenuId === exam.id ? null : exam.id);
+                type="button"
+                className="modern-exam-action-btn btn-float"
+                onClick={() => setActiveExamId(exam.id)}
+              >
+                <span>Làm bài</span>
+              </button>
+
+              <div
+                className="exam-actions"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setOpenExamMenuId(null);
+                  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                    event.preventDefault();
+                    const items = event.currentTarget.querySelectorAll<HTMLButtonElement>(".exam-menu-item");
+                    const next = event.key === "ArrowDown" ? 0 : items.length - 1;
+                    items[next]?.focus();
+                  }
                 }}
               >
-                ⋯
-              </button>
-              {openExamMenuId === exam.id && (
-                <div className="exam-menu" role="menu">
-                  <button
-                    className="exam-menu-item"
-                    role="menuitem"
-                    onClick={() => {
-                      setRenameExamId(exam.id);
-                      setRenameValue(exam.title);
-                      setOpenExamMenuId(null);
-                    }}
-                  >
-                    Đổi tên đề
-                  </button>
-                  <div className="exam-menu-separator" />
-                  <button
-                    className="exam-menu-item danger"
-                    role="menuitem"
-                    onClick={() => void (exam.hidden && !exam.userCreated ? restoreExam(exam) : removeExam(exam))}
-                  >
-                    {exam.userCreated ? "Xóa đề" : exam.hidden ? "Hiện đề" : "Ẩn đề"}
-                  </button>
-                </div>
-              )}
+                <button
+                  className="exam-menu-toggle-modern"
+                  aria-label={`Tùy chọn ${exam.title}`}
+                  aria-expanded={openExamMenuId === exam.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpenExamMenuId(openExamMenuId === exam.id ? null : exam.id);
+                  }}
+                >
+                  ⋯
+                </button>
+                {openExamMenuId === exam.id && (
+                  <div className="exam-menu" role="menu">
+                    <button
+                      className="exam-menu-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setRenameExamId(exam.id);
+                        setRenameValue(exam.title);
+                        setOpenExamMenuId(null);
+                      }}
+                    >
+                      Đổi tên đề
+                    </button>
+                    <div className="exam-menu-separator" />
+                    <button
+                      className="exam-menu-item danger"
+                      role="menuitem"
+                      onClick={() => void (exam.hidden && !exam.userCreated ? restoreExam(exam) : removeExam(exam))}
+                    >
+                      {exam.userCreated ? "Xóa đề" : exam.hidden ? "Hiện đề" : "Ẩn đề"}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}

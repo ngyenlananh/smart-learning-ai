@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Bot, CalendarDays, Cloud, Link2, LockKeyhole, Palette, Plug, UserRound, type LucideIcon } from "lucide-react";
+import { Bot, CalendarDays, Cloud, Link2, LockKeyhole, Palette, Plug, UserRound, Sparkles, Shield, type LucideIcon } from "lucide-react";
+import { HeroBanner } from "../components/common/HeroBanner";
 import { getMe } from "../services/auth";
 import { apiFetch } from "../services/api";
 import { useTranslation } from "react-i18next";
@@ -15,7 +16,13 @@ type Settings = {
   integrations: Record<string, boolean>;
 };
 const defaultSettings: Settings = { profile: { name: "Minh Anh", birthDate: "2005-08-12", phone: "0987654321", education: "Đại học", level: "Trung cấp" }, ai: { voice: "Nữ miền Nam", address: "Thầy/cô – em", tone: "Thân thiện", explanation: "Cân bằng", suggestions: true, history: true }, appearance: { language: "Tiếng Việt", theme: "Sáng", fontSize: "Vừa 16px" }, security: { twoFactor: false }, integrations: { Google: true, "Google Calendar": false, "Google Drive": false, Notion: false } };
-const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [{ id: "account", label: "Tài khoản & Cá nhân", icon: UserRound }, { id: "ai", label: "Cấu hình AI Tutor", icon: Bot }, { id: "appearance", label: "Giao diện & Ngôn ngữ", icon: Palette }, { id: "security", label: "Bảo mật", icon: LockKeyhole }, { id: "integrations", label: "Tích hợp", icon: Plug }];
+const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
+  { id: "account", label: "Tài khoản & Hồ sơ", icon: UserRound },
+  { id: "ai", label: "Cài đặt Gia sư AI", icon: Bot },
+  { id: "appearance", label: "Giao diện & Ngôn ngữ", icon: Palette },
+  { id: "security", label: "Bảo mật", icon: LockKeyhole },
+  { id: "integrations", label: "Tích hợp", icon: Plug },
+];
 const integrationDetails: Record<string, { description: string; icon: LucideIcon }> = { Google: { description: "Đăng nhập và đồng bộ tài khoản", icon: Link2 }, "Google Calendar": { description: "Đồng bộ lịch học và lịch nhắc", icon: CalendarDays }, "Google Drive": { description: "Lưu và mở tài liệu học tập", icon: Cloud }, Notion: { description: "Lưu ghi chú và kế hoạch học tập", icon: LockKeyhole } };
 function cloneSettings(settings: Settings): Settings { return JSON.parse(JSON.stringify(settings)) as Settings; }
 
@@ -46,10 +53,97 @@ export function SettingsPage() {
   function validate() { const next: Record<string, string> = {}; if (!settings.profile.name.trim()) next.name = "Nhập họ và tên để tiếp tục."; if (!/^\d{9,15}$/.test(settings.profile.phone)) next.phone = "Số điện thoại phải gồm 9–15 chữ số."; setErrors(next); return Object.keys(next).length === 0; }
   async function saveSettings() { if (!validate()) { setTab("account"); return; } try { const response = await fetch(`${API}/settings`, { method: "PUT", headers: { "Content-Type": "application/json", "X-User-Id": "demo-user" }, body: JSON.stringify(settings) }); if (!response.ok) { const payload = await response.json().catch(() => null) as { error?: string } | null; throw new Error(payload?.error ?? "Không thể lưu cài đặt."); } setSavedSettings(cloneSettings(settings)); localStorage.setItem("smartedu-language", settings.appearance.language === "English" ? "en" : "vi"); setErrors({}); window.dispatchEvent(new CustomEvent("smartedu:settings-saved", { detail: settings })); setToast(t("settings.saved")); window.setTimeout(() => setToast(""), 2600); } catch (error) { setErrors({ general: error instanceof Error ? error.message : "Không thể lưu cài đặt." }); } }
   function cancelChanges() { setSettings(cloneSettings(savedSettings)); void i18n.changeLanguage(savedSettings.appearance.language === "English" ? "en" : "vi"); setErrors({}); }
-  return <div className="settings-page"><header className="settings-header"><div><h1>{t("settings.title")}</h1><p className="settings-description">{t("settings.description")}</p></div></header><div className="settings-layout"><SettingsNav active={tab} onChange={setTab} /><main className="settings-content" aria-live="polite"><div className="settings-panel-shell">{errors.general && <p className="save-error" role="alert">{errors.general}</p>}{tab === "account" && <AccountPanel settings={settings} errors={errors} updateProfile={updateProfile} onSecurity={() => setTab("security")} />}{tab === "ai" && <AiTutorPanel settings={settings} updateSection={updateSection} />}{tab === "appearance" && <AppearancePanel settings={settings} updateSection={updateSection} />}{tab === "security" && <SecurityPanel settings={settings} updateSection={updateSection} />}{tab === "integrations" && <IntegrationsPanel settings={settings} updateSection={updateSection} />}{tab !== "integrations" && dirty && <SettingsActions onCancel={cancelChanges} onSave={() => void saveSettings()} />}</div></main></div>{toast && <div className="settings-toast" role="status">✓ {toast}</div>}</div>;
+  return (
+    <div className="settings-page">
+      {/* HERO BANNER TRUYỀN CẢM HỨNG */}
+      <HeroBanner
+        tag="⚙️ Cấu hình tài khoản & Cá nhân hóa"
+        title="Cài đặt hệ thống"
+        subtitle="Quản lý thông tin hồ sơ, tùy chỉnh phương thức phản hồi của AI và cấu hình bảo mật tài khoản."
+        metrics={[
+          {
+            icon: UserRound,
+            label: "Tài khoản",
+            value: "Đã xác thực",
+            sub: "🛡️ Bảo mật an toàn",
+            badgeClass: "target-badge",
+          },
+          {
+            icon: Bot,
+            label: "Gia sư AI",
+            value: "Hoạt động",
+            sub: "Giọng Nữ miền Nam",
+            badgeClass: "star-badge",
+          },
+          {
+            icon: Palette,
+            label: "Giao diện",
+            value: "Tiếng Việt",
+            sub: "Cỡ chữ chuẩn 16px",
+            badgeClass: "flame-badge",
+          },
+        ]}
+        headerAction={{
+          sectionTitle: "Trung tâm cài đặt",
+          sectionSubtitle: "Chọn danh mục cấu hình bên dưới để chỉnh sửa",
+          buttonText: "Lưu thay đổi",
+          buttonIcon: Sparkles,
+          onAction: () => void saveSettings(),
+        }}
+      />
+
+      <div className="settings-layout">
+        <SettingsNav active={tab} onChange={setTab} />
+        <main className="settings-content" aria-live="polite">
+          <div className="settings-panel-shell">
+            {errors.general && <p className="save-error" role="alert">{errors.general}</p>}
+            {tab === "account" && <AccountPanel settings={settings} errors={errors} updateProfile={updateProfile} onSecurity={() => setTab("security")} />}
+            {tab === "ai" && <AiTutorPanel settings={settings} updateSection={updateSection} />}
+            {tab === "appearance" && <AppearancePanel settings={settings} updateSection={updateSection} />}
+            {tab === "security" && <SecurityPanel settings={settings} updateSection={updateSection} />}
+            {tab === "integrations" && <IntegrationsPanel settings={settings} updateSection={updateSection} />}
+            {tab !== "integrations" && dirty && <SettingsActions onCancel={cancelChanges} onSave={() => void saveSettings()} />}
+          </div>
+        </main>
+      </div>
+      {toast && <div className="settings-toast" role="status">✓ {toast}</div>}
+    </div>
+  );
 }
-function SettingsNav({ active, onChange }: { active: Tab; onChange: (tab: Tab) => void }) { const { t } = useTranslation(); return <nav className="settings-nav" aria-label={t("settings.title")} role="tablist">{tabs.map((item) => { const Icon = item.icon; return <button key={item.id} role="tab" aria-selected={active === item.id} className={active === item.id ? "active" : ""} onClick={() => onChange(item.id)}><Icon size={18} strokeWidth={2} aria-hidden="true" />{t(`settings.tabs.${item.id}`, { defaultValue: item.label })}</button>; })}</nav>; }
-function SettingsActions({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) { const { t } = useTranslation(); return <div className="settings-actions"><span>{t("settings.unsaved")}</span><div><button className="outline-button" onClick={onCancel}>{t("settings.cancel")}</button><button className="primary-button" onClick={onSave}>{t("settings.save")}</button></div></div>; }
+function SettingsNav({ active, onChange }: { active: Tab; onChange: (tab: Tab) => void }) {
+  const { t } = useTranslation();
+  return (
+    <nav className="settings-nav modern-settings-nav" aria-label={t("settings.title")} role="tablist">
+      {tabs.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.id}
+            role="tab"
+            aria-selected={active === item.id}
+            className={`settings-nav-item ${active === item.id ? "active" : ""}`}
+            onClick={() => onChange(item.id)}
+          >
+            <Icon size={20} strokeWidth={2} aria-hidden="true" />
+            <span>{t(`settings.tabs.${item.id}`, { defaultValue: item.label })}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+function SettingsActions({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="settings-actions">
+      <span>{t("settings.unsaved")}</span>
+      <div>
+        <button className="outline-button btn-float" onClick={onCancel}>{t("settings.cancel")}</button>
+        <button className="enroll-new-course-btn btn-float" onClick={onSave}>{t("settings.save")}</button>
+      </div>
+    </div>
+  );
+}
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <section className="settings-panel"><div className="settings-panel-heading"><div><h2>{title}</h2><p>{description}</p></div></div>{children}</section>; }
 function Group({ title, children }: { title: string; children: React.ReactNode }) { return <div className="settings-group"><h3>{title}</h3>{children}</div>; }
 function FormRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) { return <div className="form-row"><div><label>{label}</label>{hint && <small>{hint}</small>}</div><div className="form-control">{children}</div></div>; }
@@ -76,9 +170,9 @@ function AccountPanel({ settings, errors, updateProfile, onSecurity }: { setting
       setEmailSaving(false);
     }
   }
-  return <><Panel title="Tài khoản & Cá nhân" description="Quản lý thông tin dùng để cá nhân hóa trải nghiệm học tập."><Group title="Hồ sơ"><div className="profile-photo"><div className="photo-placeholder">MA</div><button type="button" aria-label="Đổi ảnh đại diện">⌑</button><div><strong>Ảnh đại diện</strong><small>JPG hoặc PNG, tối đa 5MB</small></div></div><FormRow label="Họ và tên"><input value={settings.profile.name} onChange={(event) => updateProfile("name", event.target.value)} />{errors.name && <small className="field-error">{errors.name}</small>}</FormRow><FormRow label="Ngày sinh"><input type="date" value={settings.profile.birthDate} onChange={(event) => updateProfile("birthDate", event.target.value)} /></FormRow><FormRow label="Số điện thoại" hint="Chỉ nhập chữ số, từ 9 đến 15 số"><input inputMode="numeric" value={settings.profile.phone} onChange={(event) => updateProfile("phone", event.target.value.replace(/\D/g, ""))} />{errors.phone && <small className="field-error">{errors.phone}</small>}</FormRow></Group><Group title="Đăng nhập"><FormRow label="Email" hint="Nhập email mới rồi nhấn Enter hoặc bấm ra ngoài để lưu"><div className="inline-control"><input type="email" value={email || "Đang tải..."} disabled={emailSaving} onChange={(event) => { setEmail(event.target.value); setNextEmail(event.target.value); setEmailError(""); }} onBlur={() => void saveEmail()} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} />{emailSaving && <small>Đang lưu...</small>}</div>{emailError && <small className="field-error">{emailError}</small>}</FormRow><FormRow label="Mật khẩu"><button className="outline-button" type="button" onClick={onSecurity}>Đổi mật khẩu</button></FormRow></Group><Group title="Học tập"><FormRow label="Trình độ học vấn"><Select value={settings.profile.education} options={["THPT", "Cao đẳng", "Đại học", "Thạc sĩ", "Tiến sĩ"]} onChange={(value) => updateProfile("education", value)} /></FormRow><FormRow label="Cấp độ học tập"><Select value={settings.profile.level} options={["Cơ bản", "Trung cấp", "Nâng cao"]} onChange={(value) => updateProfile("level", value)} /></FormRow></Group></Panel></>;
+  return <><Panel title="Tài khoản & Hồ sơ" description="Quản lý thông tin dùng để cá nhân hóa trải nghiệm học tập."><Group title="Hồ sơ"><div className="profile-photo"><div className="photo-placeholder">MA</div><button type="button" aria-label="Đổi ảnh đại diện">⌑</button><div><strong>Ảnh đại diện</strong><small>JPG hoặc PNG, tối đa 5MB</small></div></div><FormRow label="Họ và tên"><input value={settings.profile.name} onChange={(event) => updateProfile("name", event.target.value)} />{errors.name && <small className="field-error">{errors.name}</small>}</FormRow><FormRow label="Ngày sinh"><input type="date" value={settings.profile.birthDate} onChange={(event) => updateProfile("birthDate", event.target.value)} /></FormRow><FormRow label="Số điện thoại" hint="Chỉ nhập chữ số, từ 9 đến 15 số"><input inputMode="numeric" value={settings.profile.phone} onChange={(event) => updateProfile("phone", event.target.value.replace(/\D/g, ""))} />{errors.phone && <small className="field-error">{errors.phone}</small>}</FormRow></Group><Group title="Đăng nhập"><FormRow label="Email" hint="Nhập email mới rồi nhấn Enter hoặc bấm ra ngoài để lưu"><div className="inline-control"><input type="email" value={email || "Đang tải..."} disabled={emailSaving} onChange={(event) => { setEmail(event.target.value); setNextEmail(event.target.value); setEmailError(""); }} onBlur={() => void saveEmail()} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} />{emailSaving && <small>Đang lưu...</small>}</div>{emailError && <small className="field-error">{emailError}</small>}</FormRow><FormRow label="Mật khẩu"><button className="outline-button" type="button" onClick={onSecurity}>Đổi mật khẩu</button></FormRow></Group><Group title="Học tập"><FormRow label="Trình độ học vấn"><Select value={settings.profile.education} options={["THPT", "Cao đẳng", "Đại học", "Thạc sĩ", "Tiến sĩ"]} onChange={(value) => updateProfile("education", value)} /></FormRow><FormRow label="Cấp độ học tập"><Select value={settings.profile.level} options={["Cơ bản", "Trung cấp", "Nâng cao"]} onChange={(value) => updateProfile("level", value)} /></FormRow></Group></Panel></>;
 }
-function AiTutorPanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const update = (key: keyof Settings["ai"], value: string | boolean) => updateSection("ai", { ...settings.ai, [key]: value }); return <Panel title="Cấu hình AI Tutor" description="Điều chỉnh cách SmartEdu AI đồng hành cùng bạn."><Group title="Cách AI trò chuyện"><FormRow label="Giọng nói AI"><Select value={settings.ai.voice} options={["Nữ miền Nam", "Nam miền Bắc", "Nữ miền Bắc", "Nam miền Nam"]} onChange={(value) => update("voice", value)} /></FormRow><SegmentedControl label="Cách xưng hô" value={settings.ai.address} options={["Thầy/cô – em", "Mình – bạn", "Tôi – bạn"]} onChange={(value) => update("address", value)} /><SegmentedControl label="Giọng điệu" value={settings.ai.tone} options={["Thân thiện", "Nghiêm túc", "Khích lệ"]} onChange={(value) => update("tone", value)} /><SegmentedControl label="Mức độ giải thích" value={settings.ai.explanation} options={["Ngắn gọn", "Cân bằng", "Chuyên sâu"]} onChange={(value) => update("explanation", value)} /></Group><Group title="Tự động hóa"><Switch label="Gợi ý bài tập sau mỗi bài học" checked={settings.ai.suggestions} onChange={(value) => update("suggestions", value)} /><Switch label="Lưu lịch sử trò chuyện" checked={settings.ai.history} onChange={(value) => update("history", value)} /></Group></Panel>; }
+function AiTutorPanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const update = (key: keyof Settings["ai"], value: string | boolean) => updateSection("ai", { ...settings.ai, [key]: value }); return <Panel title="Cài đặt Gia sư AI" description="Điều chỉnh cách SmartEdu AI đồng hành cùng bạn."><Group title="Cách AI trò chuyện"><FormRow label="Giọng nói AI"><Select value={settings.ai.voice} options={["Nữ miền Nam", "Nam miền Bắc", "Nữ miền Bắc", "Nam miền Nam"]} onChange={(value) => update("voice", value)} /></FormRow><SegmentedControl label="Cách xưng hô" value={settings.ai.address} options={["Thầy/cô – em", "Mình – bạn", "Tôi – bạn"]} onChange={(value) => update("address", value)} /><SegmentedControl label="Giọng điệu" value={settings.ai.tone} options={["Thân thiện", "Nghiêm túc", "Khích lệ"]} onChange={(value) => update("tone", value)} /><SegmentedControl label="Mức độ giải thích" value={settings.ai.explanation} options={["Ngắn gọn", "Cân bằng", "Chuyên sâu"]} onChange={(value) => update("explanation", value)} /></Group><Group title="Tự động hóa"><Switch label="Gợi ý bài tập sau mỗi bài học" checked={settings.ai.suggestions} onChange={(value) => update("suggestions", value)} /><Switch label="Lưu lịch sử trò chuyện" checked={settings.ai.history} onChange={(value) => update("history", value)} /></Group></Panel>; }
 function AppearancePanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const { t } = useTranslation(); const update = (key: keyof Settings["appearance"], value: string) => updateSection("appearance", { ...settings.appearance, [key]: value }); return <Panel title={t("settings.appearanceTitle")} description={t("settings.appearanceDescription")}><Group title={t("settings.displayOptions")}><SegmentedControl label={t("settings.language")} value={settings.appearance.language} options={[t("settings.vietnamese"), t("settings.english")]} onChange={(value) => { const language = value === t("settings.english") ? "English" : "Tiếng Việt"; update("language", language); void i18n.changeLanguage(language === "English" ? "en" : "vi"); }} /><SegmentedControl label="Chủ đề" value={settings.appearance.theme} options={["Sáng", "Tối", "Theo hệ thống"]} onChange={(value) => update("theme", value)} /><SegmentedControl label="Cỡ chữ" value={settings.appearance.fontSize} options={["Nhỏ 14px", "Vừa 16px", "Lớn 18px"]} onChange={(value) => update("fontSize", value)} /></Group></Panel>; }
 function SecurityPanel({ settings, updateSection }: { settings: Settings; updateSection: <K extends keyof Settings>(section: K, value: Settings[K]) => void }) { const [passwords, setPasswords] = useState({ current: "", next: "", confirm: "" }); const [error, setError] = useState(""); function validatePassword() { if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(passwords.next)) return setError("Mật khẩu mới phải có ít nhất 8 ký tự, gồm cả chữ và số."); if (passwords.next !== passwords.confirm) return setError("Mật khẩu nhập lại chưa khớp với mật khẩu mới."); setError("Mật khẩu hợp lệ."); } return <Panel title="Bảo mật" description="Bảo vệ tài khoản và kiểm soát các phiên đăng nhập của bạn."><Group title="Đổi mật khẩu"><FormRow label="Mật khẩu hiện tại"><input type="password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} /></FormRow><FormRow label="Mật khẩu mới" hint="Tối thiểu 8 ký tự, gồm chữ và số"><input type="password" value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} /></FormRow><FormRow label="Nhập lại mật khẩu mới"><input type="password" value={passwords.confirm} onChange={(event) => setPasswords({ ...passwords, confirm: event.target.value })} />{error && <small className={error === "Mật khẩu hợp lệ." ? "field-success" : "field-error"}>{error}</small>}</FormRow><button className="primary-button" type="button" onClick={validatePassword}>Cập nhật mật khẩu</button></Group><Group title="Xác thực hai yếu tố"><Switch label="Bật xác thực hai yếu tố (2FA)" checked={settings.security.twoFactor} onChange={(value) => updateSection("security", { twoFactor: value })} /></Group><Group title="Lịch sử đăng nhập"><div className="login-list"><LoginItem device="MacBook Pro" browser="Chrome · Hà Nội" time="Đang hoạt động" current /><LoginItem device="iPhone 15" browser="Safari · Hồ Chí Minh" time="2 giờ trước" /><LoginItem device="Windows PC" browser="Edge · Đà Nẵng" time="3 ngày trước" /></div></Group></Panel>; }
 function LoginItem({ device, browser, time, current }: { device: string; browser: string; time: string; current?: boolean }) { return <div className="login-item"><span className="device-icon">▣</span><div><strong>{device}</strong><small>{browser}</small></div><span className="login-time">{time}</span>{current ? <b>Thiết bị này</b> : <button className="text-button" type="button">Đăng xuất</button>}</div>; }
