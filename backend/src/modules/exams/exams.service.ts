@@ -348,6 +348,7 @@ const retryableProviderStatuses = new Set([500, 503]);
 
 async function requestExamModelConfigured(options: { apiKey: string; baseUrl: string; model: string; fallbackModel: string; isNativeGemini: boolean; systemPrompt: string; userPrompt: string }): Promise<{ payload: ModelPayload; model: string }> {
 	let requestAttempts = 0;
+	let timedOut = false;
 	for (const model of [options.model, options.fallbackModel]) {
 		for (let attempt = 0; attempt < 2; attempt += 1) {
 			if (requestAttempts >= 3) break;
@@ -368,6 +369,7 @@ async function requestExamModelConfigured(options: { apiKey: string; baseUrl: st
 				});
 			} catch (error) {
 				console.error(`[AI exams] provider request failed url=${redactAiUrl(url)} model=${model} attempt=${attempt + 1}`, error);
+				if (error instanceof DOMException && error.name === "TimeoutError") timedOut = true;
 				if (attempt < 1) await new Promise((resolve) => setTimeout(resolve, 750));
 				continue;
 			}
@@ -395,6 +397,13 @@ async function requestExamModelConfigured(options: { apiKey: string; baseUrl: st
 			}
 			if (attempt < 1) await new Promise((resolve) => setTimeout(resolve, 750));
 		}
+	}
+	if (timedOut) {
+		throw new ExamGenerationError(
+			"AI_TIMEOUT",
+			"API key đã kết nối nhưng không trả lời yêu cầu tạo đề. Hãy kiểm tra API key, quyền truy cập model và AI_BASE_URL trong backend/.env.",
+			504,
+		);
 	}
 	throw new ExamGenerationError("AI_UNAVAILABLE", "AI đang quá tải hoặc hết hạn mức, vui lòng thử lại sau.", 503);
 }

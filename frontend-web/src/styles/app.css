@@ -70,7 +70,7 @@ body { margin: 0; min-width: 320px; background: #f7f9fa; font-family: var(--font
 .flash-card-shell .flash-card { position: relative; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 18px; background: transparent; transform-style: preserve-3d; transition: transform .55s cubic-bezier(.2,.7,.2,1); box-shadow: none; }
 .flash-card-shell .flash-card:hover { border: 0; box-shadow: none; }
 .flash-face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 34px; border: 1px solid #c8dce6; border-radius: 18px; background: linear-gradient(145deg, #ffffff 0%, #eef8ff 100%); box-shadow: 0 22px 45px #173b4d24, 0 5px 12px #173b4d12; backface-visibility: hidden; }
-.flash-back { transform: rotateY(180deg); background: linear-gradient(145deg, #f4fbff 0%, #dceefa 100%); }
+.flash-back { transform: rotateY(180deg); }
 .flash-label { color: #176fbe; font-size: 10px; font-weight: 900; letter-spacing: .16em; }
 .flash-term { color: #102d3a; font-size: 48px; font-weight: 800; }
 .flash-meta { display: flex; align-items: center; gap: 10px; color: #23546b; font-size: 15px; }
@@ -511,10 +511,32 @@ button:focus-visible, input:focus-visible { outline: 3px solid #9bc8e9; outline-
 .flash-context { font-size: 13px; }
 .flash-context em { font-size: 13px; }
 .flash-back-minimal .flash-meaning { text-align: center; }
+.flash-back { gap: 18px; }
+.flash-back-source { display: flex; align-items: center; justify-content: center; gap: 9px; color: #64748b; font-size: 15px; line-height: 1.3; }
+.flash-back-source strong { color: #475569; font-size: 18px; font-weight: 600; }
+.flash-back-source .card-sound { width: 26px; height: 26px; color: #64748b; font-size: 16px; }
+.flash-back-meaning { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.flash-back-meaning .flash-study-count { color: #64748b; font-size: 13px; font-weight: 500; }
+.flash-back-meaning .flash-meaning { color: #0f172a; font-size: clamp(36px, 4vw, 40px); font-weight: 700; line-height: 1.2; }
+.flash-back .flash-example { width: min(100%, 560px); margin-top: 4px; padding-top: 16px; border-top: 1px solid #dbe3e8; color: #475569; font-size: 16px; line-height: 1.5; text-align: center; }
+.flash-back .flash-example > span { display: block; }
+.flash-back .flash-example small { display: block; margin-top: 6px; color: #64748b; font-size: 13px; }
+
+/* Flash-back enhanced layout */
+.flash-back-header { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.flash-back-visual { font-size: 38px; line-height: 1; opacity: .85; filter: grayscale(0.1); }
+.flash-back-divider { display: block; width: 56px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, #0891b2 0%, #38bdf8 100%); opacity: .6; margin: 2px auto; }
+.flash-back-hint { margin-top: auto; }
+.flash-back-hint small { color: #94a3b8; font-size: 12px; font-style: italic; }
+.flash-back-minimal { justify-content: center; }
+.flash-back-minimal .flash-back-header { margin-bottom: 4px; }
+.flash-back-minimal .flash-back-meaning { flex: 0; }
+@media (max-width: 680px) { .flash-back-visual { font-size: 28px; }.flash-back-divider { width: 40px; height: 2px; }.flash-back-hint small { font-size: 11px; } }
+
 .flash-card-tools button { padding: 7px 12px; font-size: 12px; }
 .flash-face > i { font-size: 11px; }
 .flash-actions .outline-button { font-size: 14px; }
-@media (max-width: 680px) { .flash-illustration { font-size: 36px; }.flash-term { font-size: 34px; }.flash-pronunciation, .flash-pronunciation b { font-size: 13px; }.flash-context, .flash-context em { font-size: 10px; } }
+@media (max-width: 680px) { .flash-illustration { font-size: 36px; }.flash-term { font-size: 34px; }.flash-pronunciation, .flash-pronunciation b { font-size: 13px; }.flash-context, .flash-context em { font-size: 10px; }.flash-back { gap: 14px; padding: 24px 16px !important; }.flash-back-source { font-size: 13px; }.flash-back-source strong { font-size: 16px; }.flash-back-meaning .flash-meaning { font-size: 32px; }.flash-back .flash-example { font-size: 14px; }.flash-back .flash-example small { font-size: 12px; } }
 
 /* Compact review reminder banner */
 .review-due-banner { align-items: center; gap: 13px; min-height: 64px; margin: 0 0 20px; padding: 10px 15px; border: 0; border-radius: 8px; background: #ffdda0; box-shadow: none; }

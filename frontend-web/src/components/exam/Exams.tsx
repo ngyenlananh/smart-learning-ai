@@ -757,6 +757,9 @@ function ExamGenerator({
         if (response.status === 429 || payload?.code === "AI_QUOTA_EXCEEDED") {
           throw new Error(payload?.error || "AI đã hết hạn mức. Hãy kiểm tra quota/billing của API key rồi thử lại.");
         }
+        if (response.status === 504 || payload?.code === "AI_TIMEOUT") {
+          throw new Error(payload?.error || "API key đã kết nối nhưng không tạo được nội dung. Hãy kiểm tra API key, quyền truy cập model và cấu hình backend rồi thử lại.");
+        }
         if (response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504) {
           throw new Error(payload?.error || "AI đang quá tải hoặc chưa sẵn sàng, vui lòng thử lại sau.");
         }

@@ -102,6 +102,7 @@ async function requestModel(message: string, history: ChatMessage[], context?: s
 	const baseUrl = (process.env.AI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
 	const configuredModel = process.env.AI_MODEL ?? "gpt-4o-mini";
 	const model = configuredModel === "gemini-2.5-flash" ? "gemini-3.6-flash" : configuredModel;
+	const fallbackModel = process.env.AI_FALLBACK_MODEL ?? "gemini-3.7-flash";
 	if (!apiKey) return { text: fallbackAnswer(message), provider: "fallback" };
 
 	const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -118,6 +119,31 @@ async function requestModel(message: string, history: ChatMessage[], context?: s
 			],
 		}),
 	});
+	if (!response.ok && [429, 500, 502, 503, 504].includes(response.status) && fallbackModel !== model) {
+		console.warn(`[AI chat] retrying with fallback model=${fallbackModel} after status=${response.status}`);
+		const fallbackResponse = await fetch(`${baseUrl}/chat/completions`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+			signal: AbortSignal.timeout(120_000),
+			body: JSON.stringify({
+				model: fallbackModel,
+				temperature: 0.4,
+				messages: [
+					{ role: "system", content: context ? `${systemPrompt}\n\nNgữ cảnh bài học hiện tại:\n${context}` : systemPrompt },
+					...history.map((item) => ({ role: item.role, content: item.content })),
+					{ role: "user", content: message },
+				],
+			}),
+		});
+		if (fallbackResponse.ok) {
+			const fallbackPayload = await fallbackResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
+			const fallbackText = fallbackPayload.choices?.[0]?.message?.content?.trim();
+			if (fallbackText) return { text: fallbackText, provider: fallbackModel };
+		}
+		if ([429, 500, 502, 503, 504].includes(response.status)) {
+			return { text: fallbackAnswer(message, "Gemini đang quá tải, nên hệ thống tạm dùng câu trả lời dự phòng"), provider: "fallback-provider-unavailable" };
+		}
+	}
 	if (!response.ok) {
 		const details = await response.text();
 		console.error(`[AI chat] provider error status=${response.status} model=${model}: ${details.slice(0, 500)}`);
